@@ -1,0 +1,17 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "sinatra"
+gem "rswag-ui"
+gem "rswag-api"
+gem "puma"
+
+group :test do
+  gem "rack-test"
+  gem "rspec"
+end
+
+group :development, :test do
+  gem "rubocop-rails-omakase", require: false
+end

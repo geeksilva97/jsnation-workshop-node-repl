@@ -1,0 +1,2 @@
+#!/usr/bin/env ruby
+exec 'bundle', 'exec', 'puma', 'config.ru', '-p', '4000', '-e', ENV.fetch('RACK_ENV', 'development'), *ARGV

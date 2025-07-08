@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:17.5
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+  redis:
+    image: redis:7
+    volumes:
+      - redis-data:/data
+    ports:
+      - '6379:6379'
+  mock-payment-api:
+    image: ruby:3.4
+    working_dir: /app
+    volumes:
+      - ./mock-payment-api:/app
+    command: bash -c 'bundle install && bin/dev'
+    environment:
+      RACK_ENV: development
+      PAYMENT_WEBHOOK_URL: http://host.docker.internal:3000/webhooks/payment
+      PAYMENT_WEBHOOK_SECRET: secret
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - '4000:4000'
+volumes:
+  postgres-data:
+  redis-data:

@@ -1,0 +1,4 @@
+node_modules/
+.env
+park42/node_modules/
+park42/dist/

@@ -1,0 +1,223 @@
+openapi: 3.0.1
+info:
+  title: Mock Payment API
+  version: v1
+paths:
+  /status:
+    get:
+      summary: API status
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+  /payment-tokens:
+    post:
+      summary: Generate a mock payment token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                card_number:
+                  type: string
+                expiration:
+                  type: string
+                cvv:
+                  type: string
+              required:
+                - card_number
+                - expiration
+                - cvv
+              example:
+                card_number: '4111111111111111'
+                expiration: '12/25'
+                cvv: '123'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payment_token:
+                    type: string
+                    example: 4072a40d26ab1de87a9a4b4554e4a826646647702eab4263c5eeadd12364eedc
+        '400':
+          description: Invalid JSON
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                example:
+                  errors:
+                    - invalid JSON
+        '422':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                example:
+                  errors:
+                    - card_number is required
+
+  /payments:
+    post:
+      summary: Process a payment
+      description: Requires a payment token previously returned by the
+        `POST /payment-tokens` endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payment_token:
+                  type: string
+                  pattern: "^[0-9a-f]{64}$"
+                reservation_id:
+                  type: string
+                amount:
+                  type: integer
+              required:
+                - payment_token
+                - reservation_id
+                - amount
+              example:
+                payment_token: 4072a40d26ab1de87a9a4b4554e4a826646647702eab4263c5eeadd12364eedc
+                reservation_id: reservation-id
+                amount: 20000
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: PROCESSING
+        '400':
+          description: Invalid JSON
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                example:
+                  errors:
+                    - invalid JSON
+        '422':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+              example:
+                errors:
+                  - payment_token is required
+        '500':
+          description: Random payment failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+              example:
+                errors:
+                  - payment processing error
+  /simulate-payment:
+    post:
+      summary: Trigger payment webhook manually
+      description: Sends a payment webhook with an `X-Webhook-Secret` header
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reservation_id:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                    - CONFIRMED
+                    - FAILED
+              required:
+                - reservation_id
+                - status
+              example:
+                reservation_id: reservation-id
+                status: CONFIRMED
+      responses:
+        '200':
+          description: Webhooks sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: SENT
+        '400':
+          description: Invalid JSON
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                example:
+                  errors:
+                    - invalid JSON
+        '422':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                example:
+                  errors:
+                    - reservation_id is required

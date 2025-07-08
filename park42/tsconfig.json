@@ -1,0 +1,15 @@
+{
+  "extends": "@tsconfig/node-lts/tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ESNext"],
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "resolveJsonModule": true,
+    "rootDir": "./",
+    "outDir": "./dist"
+  },
+  "include": ["knexfile.ts", "types", "src/**/*", "tests/**/*"],
+  "exclude": ["./dist", "./node_modules"]
+}
