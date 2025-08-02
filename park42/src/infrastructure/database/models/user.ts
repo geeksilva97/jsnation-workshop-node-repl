@@ -25,6 +25,7 @@ export class User extends BaseModel {
   }
 
   async $beforeInsert() {
+    super.$beforeInsert();
     if (this.password) {
       this.password_digest = await bcrypt.hash(this.password, 10);
       delete this.password;
@@ -38,6 +39,7 @@ export class User extends BaseModel {
     }
   }
 
+  // TODO: authentication inside of the model??
   static async authenticate(
     email: string,
     password: string,

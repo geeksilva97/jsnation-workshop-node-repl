@@ -1,15 +1,15 @@
 import { Model } from "objection";
 
 export default class BaseModel extends Model {
-  createdAt!: Date;
-  updatedAt!: Date;
+  created_at!: Date;
+  updated_at!: Date;
 
   $beforeInsert() {
-    this.createdAt = new Date();
-    this.updatedAt = this.createdAt;
+    this.created_at = new Date();
+    this.updated_at = this.created_at;
   }
 
   $beforeUpdate() {
-    this.updatedAt = new Date();
+    this.updated_at = new Date();
   }
 }

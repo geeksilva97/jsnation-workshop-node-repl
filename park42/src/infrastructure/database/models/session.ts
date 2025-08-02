@@ -24,6 +24,7 @@ export class Session extends BaseModel {
   }
 
   async $beforeInsert() {
+    super.$beforeInsert();
     this.token = crypto.randomBytes(32).toString("hex");
   }
 }
