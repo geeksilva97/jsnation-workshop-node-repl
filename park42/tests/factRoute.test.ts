@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { decrypt } from "../src/_lib/priceToken.js";
 import { setupTest, type Test } from "../src/_lib/testSupport/setupTest.js";
 import { User } from "../src/infrastructure/database/models/user.js";
 

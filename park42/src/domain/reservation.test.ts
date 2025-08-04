@@ -12,6 +12,23 @@ describe("Reservation", () => {
     maxMonths: 3,
   });
 
+  it("creates a valid domain object", () => {
+    const reservation = Reservation.create({
+      period,
+      amount: 10000,
+      payment_token: "blah",
+      price_token: "blah",
+    });
+
+    expect(reservation).instanceof(Reservation);
+    expect(reservation).toMatchObject({
+      amount: 10000,
+      payment_token: 'blah',
+      price_token: 'blah',
+      period
+    });
+  });
+
   it("throws error when price_token is invalid", () => {
     expect(() => {
       Reservation.create({

@@ -8,7 +8,7 @@ type Period = {
 };
 
 export class ReservationPeriod {
-  private constructor(private readonly start: Date, private readonly end: Date) {}
+  private constructor(readonly start: Date, readonly end: Date) {}
 
   static create(period: Period) {
     if (Number.isNaN(period.start_at.getTime()) || Number.isNaN(period.end_at.getTime())) {
