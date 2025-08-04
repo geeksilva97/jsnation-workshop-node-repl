@@ -1,6 +1,7 @@
 import { ReservationPeriod } from "../domain/reservation-period.js";
 import { Reservation } from "../domain/reservation.js";
 import { ReservationModel } from "../infrastructure/database/models/reservation.js";
+import { PaymentService } from "./payment-api-service.js";
 
 type ReservationDTO = {
   start_at: Date;
@@ -8,16 +9,6 @@ type ReservationDTO = {
   amount: number;
   price_token: string;
   payment_token: string;
-};
-
-type PaymentProps = {
-  payment_token: string;
-  reservation_id: number;
-  amount: number;
-};
-
-export type PaymentService = {
-  call(props: PaymentProps): Promise<void>;
 };
 
 type ServiceDependencies = {
@@ -38,7 +29,7 @@ class CreateReservationService {
     price_token,
     payment_token,
     user_id,
-  }: ReservationDTO & { user_id: number }) {
+  }: ReservationDTO & { user_id: number }): Promise<Reservation> {
     const period = ReservationPeriod.create({
       start_at: new Date(start_at),
       end_at: new Date(end_at),
@@ -52,7 +43,7 @@ class CreateReservationService {
       payment_token,
     });
 
-    await this.persist({
+    return await this.persist({
       ...reservation,
       user_id,
     });
@@ -63,8 +54,29 @@ class CreateReservationService {
     payment_token,
     price_token,
     user_id,
-    period
+    period,
   }: Reservation & { user_id: number }) {
+    const existingReservation = await ReservationModel.query()
+      .where({
+        amount: amount,
+        payment_token: payment_token,
+        price_token: price_token,
+        user_id,
+        start_at: period.start,
+        end_at: period.end,
+      })
+      .first();
+
+    if (existingReservation) {
+      return Reservation.fromPersistence({
+        id: existingReservation.id,
+        payment_token,
+        price_token,
+        amount,
+        period,
+      });
+    }
+
     const reservation = await ReservationModel.query().insert({
       amount: amount,
       payment_token: payment_token,
@@ -72,21 +84,30 @@ class CreateReservationService {
       payment_status: "PENDING",
       user_id,
       start_at: period.start,
-      end_at: period.end
+      end_at: period.end,
     });
 
     try {
       // TODO: have a retry here?
-      await this.paymentService.call({
+      await this.paymentService.processPayment({
         payment_token,
         amount,
         reservation_id: reservation.id,
+      });
+
+      return Reservation.fromPersistence({
+        id: reservation.id,
+        payment_token,
+        price_token,
+        amount,
+        period,
       });
     } catch (e) {
       console.error(`Error while calling the Mock Payment API`, e);
 
       // what if this fails?
       await reservation.$query().delete();
+      throw "Error while creating reservation";
     }
   }
 }

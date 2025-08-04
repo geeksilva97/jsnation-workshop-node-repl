@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
+import { normalizeDate } from "./dates.js";
 
-type PricePayload = {
+export type PricePayload = {
   start_at: string;
   end_at: string;
   price: number;
@@ -37,6 +38,35 @@ export function decrypt(token: string): PricePayload | null {
 
     return JSON.parse(decrypted.toString());
   } catch (_err) {
+    // TODO: the error is swallowed, if something goes wrong this will be hard to debug
     return null;
   }
 }
+
+export const isValid = ({
+  end_at,
+  token,
+  start_at,
+  amount,
+}: {
+  token: string;
+  start_at: string;
+  end_at: string;
+  amount: number;
+}): boolean => {
+  const pricePayload = decrypt(token);
+  if (pricePayload === null) return false;
+
+  const [startAt, endAt, pricePayloadStartAt, pricePayloadEndAt] = [
+    start_at,
+    end_at,
+    pricePayload.start_at,
+    pricePayload.end_at,
+  ].map((d) => normalizeDate(new Date(d)));
+
+  return (
+    pricePayloadStartAt.getTime() === startAt.getTime() &&
+    pricePayloadEndAt.getTime() === endAt.getTime() &&
+    pricePayload.price === amount
+  );
+};

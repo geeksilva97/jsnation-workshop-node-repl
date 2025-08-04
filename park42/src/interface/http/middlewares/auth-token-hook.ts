@@ -1,8 +1,9 @@
-import type { FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyReply } from "fastify";
 import { Session } from "../../../infrastructure/database/models/session.js";
+import type { AuthedFastifyRequest } from "../types/index.js";
 
 export const authTokenHook = async (
-  request: FastifyRequest,
+  request: AuthedFastifyRequest,
   reply: FastifyReply,
 ) => {
   const auth = request.headers.authorization || "";
@@ -14,4 +15,8 @@ export const authTokenHook = async (
   if (!session) {
     return reply.code(401).send();
   }
+
+  request.user = {
+    id: session.user_id,
+  };
 };

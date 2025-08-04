@@ -25,6 +25,16 @@ export class Reservation {
   }
 
   static create(params: Params) {
+    Reservation.validate(params);
+    return new Reservation(params);
+  }
+
+  static fromPersistence(params: Params & { id: number }) {
+    Reservation.validate(params);
+    return new Reservation(params);
+  }
+
+  private static validate(params: Params) {
     if (params.price_token.length === 0)
       throw DomainError.create({
         message: "Price token must be provided",
@@ -39,7 +49,5 @@ export class Reservation {
       throw DomainError.create({
         message: "Amount must be a positive number",
       });
-
-    return new Reservation(params);
   }
 }
