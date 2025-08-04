@@ -1,25 +1,9 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { FactOfLife } from "../../../infrastructure/database/models/facts-of-life.js";
-import { Session } from "../../../infrastructure/database/models/session.js";
 import { UniqueViolationError } from "objection";
+import { authTokenHook } from "../middlewares/auth-token-hook.js";
 
 export const factsOfLifeRoutes = (fastify: FastifyInstance) => {
-  const authMiddleware = async (
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ) => {
-    // TODO: should auth be in each handler, every time??
-    const auth = request.headers.authorization || "";
-    if (!auth.startsWith("Bearer ")) {
-      return reply.code(401).send();
-    }
-    const token = auth.replace("Bearer ", "").trim();
-    const session = await Session.query().findOne({ token });
-    if (!session) {
-      return reply.code(401).send();
-    }
-  };
-
   fastify.get("/facts", {
     schema: {
       querystring: {
@@ -104,6 +88,6 @@ export const factsOfLifeRoutes = (fastify: FastifyInstance) => {
         message: "Fact successfully created",
       });
     },
-    preValidation: authMiddleware
+    preValidation: authTokenHook
   });
 };

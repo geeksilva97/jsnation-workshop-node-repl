@@ -53,7 +53,6 @@ export const makeServer = async (dependencies: { queue: Queue }) => {
   server.register(healthRoutes);
   server.register(sessionRoutes);
   server.register(priceRoutes);
-  // server.register(factsOfLifeRoutes, { prefix: '/facts' });
   server.register(factsOfLifeRoutes);
 
   return server;
