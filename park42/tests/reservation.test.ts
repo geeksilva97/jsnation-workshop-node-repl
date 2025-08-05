@@ -10,23 +10,8 @@ import {
 import { setupTest, type Test } from "../src/_lib/testSupport/setupTest.js";
 import { User } from "../src/infrastructure/database/models/user.js";
 import * as PriceToken from "../src/_lib/priceToken.js";
-import { createPaymentToken } from "./support/index.js";
-
-const getUser = async (test: Test) => {
-  const user = await User.query().insert({
-    email: "user@example.com",
-    password: "password",
-  });
-  const authToken = await test.authenticate({
-    email: user.email,
-    password: "password",
-  });
-
-  return {
-    user,
-    authToken
-  }
-};
+import { createPaymentToken, getUser } from "./support/index.js";
+import { addMonthsSafely } from "../src/_lib/dates.js";
 
 // https://stackoverflow.com/questions/76836909/referenceerror-cannot-access-mock-before-initialization-when-using-vitest
 const { mockProcessPayment } = vi.hoisted(() => {
@@ -39,7 +24,7 @@ vi.mock("../src/services/payment-api-service.js", () => ({
   }),
 }));
 
-describe("POST /facts", () => {
+describe("POST /reservation", () => {
   let test: Test;
 
   beforeAll(async () => {
@@ -146,51 +131,13 @@ describe("POST /facts", () => {
       });
 
       describe("and the mock payment api fails", () => {
-        it.todo("does not create the reservation");
-      });
-    });
-
-    describe('when payload is invalid', () => {
-      describe('when start_at is invalid', () => {
-        it('returns 400 (BadRequest)', async () => {
+        it("does not create the reservation", async () => {
           const { authToken } = await getUser(test);
           const payment_token = await createPaymentToken();
           const start_at = new Date();
           const end_at = new Date();
 
-          const price_token = PriceToken.generate({
-            start_at: start_at.toISOString(),
-            end_at: end_at.toISOString(),
-            price: 50000,
-            currency: "BRL",
-          });
-
-          const response = await test.server.inject({
-            method: "POST",
-            url: "/reservation",
-            headers: { Authorization: `Bearer ${authToken}` },
-            payload: {
-              start_at: null,
-              end_at,
-              price_token,
-              payment_token,
-              amount: 50000,
-            },
-          });
-
-          const body = JSON.parse(response.body);
-
-          expect(response.statusCode).toBe(400);
-          expect(body.message).toBe('body/start_at must match format "date-time"');
-        });
-      });
-
-      describe('when start_at is invalid', () => {
-        it('returns 400 (BadRequest)', async () => {
-          const { authToken } = await getUser(test);
-          const payment_token = await createPaymentToken();
-          const start_at = new Date();
-          const end_at = new Date();
+          mockProcessPayment.mockRejectedValue({ errors: ['payment_token is invalid'] })
 
           const price_token = PriceToken.generate({
             start_at: start_at.toISOString(),
@@ -205,7 +152,7 @@ describe("POST /facts", () => {
             headers: { Authorization: `Bearer ${authToken}` },
             payload: {
               start_at,
-              end_at: null,
+              end_at,
               price_token,
               payment_token,
               amount: 50000,
@@ -214,39 +161,164 @@ describe("POST /facts", () => {
 
           const body = JSON.parse(response.body);
 
+          expect(response.statusCode).toBe(500);
+          expect(body.message).toBe("Unexpected error during the reservation creation");
+        });
+      });
+    });
+
+    describe("when payload is invalid", () => {
+      describe.each([
+        {
+          case: "start_at is invalid",
+          expectedValidationErrorMessage:
+            'body/start_at must match format "date-time"',
+          payload: {
+            start_at: null,
+          },
+        },
+        {
+          case: "end_at is invalid",
+          expectedValidationErrorMessage:
+            'body/end_at must match format "date-time"',
+          payload: {
+            end_at: null,
+          },
+        },
+        {
+          case: "payment_token is invalid",
+          expectedValidationErrorMessage:
+            "body/payment_token must NOT have fewer than 1 characters",
+          payload: {
+            payment_token: "",
+          },
+        },
+        {
+          case: "price_token is invalid",
+          expectedValidationErrorMessage:
+            "body/price_token must NOT have fewer than 1 characters",
+          payload: {
+            price_token: "",
+          },
+        },
+        {
+          case: "amount is invalid",
+          expectedValidationErrorMessage: "body/amount must be >= 1",
+          payload: {
+            amount: -1,
+          },
+        },
+      ])("and $case", (testCaseProps) => {
+        it("returns 400 (BadRequest)", async () => {
+          const { authToken } = await getUser(test);
+          const payment_token = await createPaymentToken();
+          const start_at = new Date();
+          const end_at = new Date();
+          const amount = 50000;
+
+          const price_token = PriceToken.generate({
+            start_at: start_at.toISOString(),
+            end_at: end_at.toISOString(),
+            price: amount,
+            currency: "BRL",
+          });
+          const basePayload = {
+            start_at,
+            end_at,
+            price_token,
+            payment_token,
+            amount,
+          };
+
+          const newPayload = { ...basePayload, ...testCaseProps.payload };
+
+          const response = await test.server.inject({
+            method: "POST",
+            url: "/reservation",
+            headers: { Authorization: `Bearer ${authToken}` },
+            payload: newPayload,
+          });
+
+          const body = JSON.parse(response.body);
+
           expect(response.statusCode).toBe(400);
-          expect(body.message).toBe('body/end_at must match format "date-time"');
+          expect(body.message).toBe(
+            testCaseProps.expectedValidationErrorMessage,
+          );
         });
       });
 
-      describe('when end_at is invalid', () => {
-        it.todo('returns 400 (BadRequest)');
+      describe("and start_at is before than today", () => {
+        it("returns 400 (BadRequest)", async () => {
+          const { authToken } = await getUser(test);
+          const payment_token = await createPaymentToken();
+          const start_at = new Date();
+          const end_at = new Date();
+          const amount = 50000;
+
+          const price_token = PriceToken.generate({
+            start_at: start_at.toISOString(),
+            end_at: end_at.toISOString(),
+            price: amount,
+            currency: "BRL",
+          });
+
+          const response = await test.server.inject({
+            method: "POST",
+            url: "/reservation",
+            headers: { Authorization: `Bearer ${authToken}` },
+            payload: {
+              start_at: new Date(start_at.getTime() - 24 * 60 * 60 * 1000),
+              end_at,
+              price_token,
+              payment_token,
+              amount,
+            },
+          });
+
+          const body = JSON.parse(response.body);
+
+          expect(response.statusCode).toBe(400);
+          expect(body.message).toBe("start_at cannot be in the past");
+        });
       });
 
-      describe('when payment_token is invalid', () => {
-        it.todo('returns 400 (BadRequest)');
-      });
+      describe("and end_at is after three months ahead", () => {
+        it("returns 400 (BadRequest)", async () => {
+          const { authToken } = await getUser(test);
+          const payment_token = await createPaymentToken();
+          const start_at = new Date();
+          const end_at = new Date();
+          const amount = 50000;
 
-      describe('when price_token is invalid', () => {
-        it.todo('returns 400 (BadRequest)');
+          const price_token = PriceToken.generate({
+            start_at: start_at.toISOString(),
+            end_at: end_at.toISOString(),
+            price: amount,
+            currency: "BRL",
+          });
+
+          const response = await test.server.inject({
+            method: "POST",
+            url: "/reservation",
+            headers: { Authorization: `Bearer ${authToken}` },
+            payload: {
+              start_at,
+              end_at: addMonthsSafely(start_at, 4),
+              price_token,
+              payment_token,
+              amount,
+            },
+          });
+
+          const body = JSON.parse(response.body);
+
+          expect(response.statusCode).toBe(400);
+          expect(body.message).toBe(
+            "end_at must be at most three months from today",
+          );
+        });
       });
     });
   });
-
-  // describe("when user is not authenticated", () => {
-  //   it("returns 401 (unauthorized)", async () => {
-  //     const authToken = "invalid-token";
-  //     const startAt = new Date(Date.UTC(2025, 5, 1)).toISOString();
-  //     const endAt = new Date(Date.UTC(2025, 5, 2)).toISOString();
-
-  //     const response = await test.server.inject({
-  //       method: "POST",
-  //       url: "/facts",
-  //       headers: { Authorization: `Bearer ${authToken}` },
-  //       payload: { start_at: startAt, end_at: endAt },
-  //     });
-
-  //     expect(response.statusCode).toBe(401);
-  //   });
-  // });
 });

@@ -1,7 +1,7 @@
 import { ReservationPeriod } from "../domain/reservation-period.js";
 import { Reservation } from "../domain/reservation.js";
 import { ReservationModel } from "../infrastructure/database/models/reservation.js";
-import { PaymentService } from "./payment-api-service.js";
+import type { PaymentService } from "./payment-api-service.js";
 
 type ReservationDTO = {
   start_at: Date;
@@ -107,7 +107,10 @@ class CreateReservationService {
 
       // what if this fails?
       await reservation.$query().delete();
-      throw "Error while creating reservation";
+
+      throw {
+        message: "Unexpected error during the reservation creation"
+      };
     }
   }
 }

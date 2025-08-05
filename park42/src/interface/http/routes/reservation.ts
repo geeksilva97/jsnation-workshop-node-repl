@@ -5,12 +5,11 @@ import type {
   HookHandlerDoneFunction,
 } from "fastify";
 import { authTokenHook } from "../middlewares/auth-token-hook.js";
-import { PriceToken } from "../../../domain/price-token.js";
 import * as PriceTokenService from "../../../_lib/priceToken.js";
 import { addMonthsSafely, normalizeDate } from "../../../_lib/dates.js";
 import { makeCreateReservationService } from "../../../services/create-reservation-service.js";
 import { makePaymentService } from "../../../services/payment-api-service.js";
-import { AuthedFastifyRequest } from "../types/index.js";
+import type { AuthedFastifyRequest } from "../types/index.js";
 
 export type CreateReservationDto = {
   start_at: string;

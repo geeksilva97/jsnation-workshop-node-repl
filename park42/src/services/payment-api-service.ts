@@ -1,14 +1,18 @@
-interface PaymentRequest {
+type PaymentRequest = {
   payment_token: string;
   reservation_id: number;
   amount: number;
-}
+};
 
-interface PaymentServiceConfig {
+type PaymentServiceConfig = {
   baseUrl: string;
-}
+};
 
-export class PaymentService {
+export type PaymentService = {
+  processPayment(paymentRequest: PaymentRequest): Promise<void>;
+};
+
+export class PaymentServiceAPI implements PaymentService {
   private readonly baseUrl: string;
 
   constructor(config: PaymentServiceConfig) {
@@ -43,5 +47,5 @@ export class PaymentService {
 export function makePaymentService(
   config: PaymentServiceConfig,
 ): PaymentService {
-  return new PaymentService(config);
+  return new PaymentServiceAPI(config);
 }
