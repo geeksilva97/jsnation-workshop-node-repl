@@ -2,6 +2,8 @@ import "dotenv/config";
 import type { Knex } from "knex";
 import { pino } from "pino";
 import { Env, type EnvType } from "./_lib/env.js";
+import { makePaymentService } from "./services/payment-api-service.js";
+import { makeCreateReservationService } from "./services/create-reservation-service.js";
 
 const env = Env.getString<EnvType>("NODE_ENV", "development");
 
@@ -69,11 +71,29 @@ const http = {
   },
 };
 
+const paymentService = makePaymentService({
+  baseUrl: Env.getString("MOCK_API_URL", "http://localhost:4000"),
+});
+
+const maxMonthsInterval = Env.getNumber("MAX_MONTHS_INTERVAL", 3);
+
 const secrets = {
   jwtSecret: Env.getString("JWT_SECRET", "park42-secret"),
   paymentApiSecret: Env.getString("PAYMENT_API_SECRET", "secret"),
 };
 
-export const config = { env, db, redis, http, secrets };
+const createReservationUseCase = makeCreateReservationService({
+  maxMonths: maxMonthsInterval,
+  paymentService,
+});
+
+export const config = {
+  env,
+  db,
+  redis,
+  http,
+  createReservationUseCase,
+  secrets,
+};
 
 export type Config = typeof config;

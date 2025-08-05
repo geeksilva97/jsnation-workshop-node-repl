@@ -9,7 +9,7 @@ import { config } from "../../config.js";
 import { healthRoutes } from "./routes/health.js";
 import { priceRoutes } from "./routes/price.js";
 import { sessionRoutes } from "./routes/session.js";
-import { reservationRoutes } from "./routes/reservation.js";
+import { reservationRoutes } from "./reservation-controller/index.js";
 
 export const makeServer = async (dependencies: { queue: Queue }) => {
   const { queue } = dependencies;
@@ -53,7 +53,7 @@ export const makeServer = async (dependencies: { queue: Queue }) => {
   server.register(healthRoutes);
   server.register(sessionRoutes);
   server.register(priceRoutes);
-  server.register(reservationRoutes);
+  server.register(reservationRoutes, { prefix: 'reservation' });
 
   return server;
 };

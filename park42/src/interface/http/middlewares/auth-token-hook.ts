@@ -1,9 +1,8 @@
-import type { FastifyReply } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { Session } from "../../../infrastructure/database/models/session.js";
-import type { AuthedFastifyRequest } from "../types/index.js";
 
 export const authTokenHook = async (
-  request: AuthedFastifyRequest,
+  request: FastifyRequest,
   reply: FastifyReply,
 ) => {
   const auth = request.headers.authorization || "";

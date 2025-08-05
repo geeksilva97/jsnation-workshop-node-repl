@@ -8,7 +8,8 @@
     "exactOptionalPropertyTypes": true,
     "resolveJsonModule": true,
     "rootDir": "./",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
   "include": ["knexfile.ts", "types", "src/**/*", "tests/**/*"],
   "exclude": ["./dist", "./node_modules"]
