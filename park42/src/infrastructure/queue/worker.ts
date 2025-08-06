@@ -2,7 +2,8 @@ import { Worker } from "bullmq";
 import IORedis from "ioredis";
 import { config } from "../../config.js";
 
-const connection = new IORedis({
+// https://github.com/redis/ioredis/issues/1632
+const connection = new IORedis.default({
   host: config.redis.host,
   port: config.redis.port,
   maxRetriesPerRequest: null,
