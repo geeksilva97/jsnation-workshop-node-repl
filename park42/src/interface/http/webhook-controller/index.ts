@@ -1,4 +1,5 @@
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
+import { authWebhook } from "./hooks.js";
 import * as updateStatus from "./update-payment-status-handler.js";
 
 export type CreateReservationDto = {
@@ -13,5 +14,6 @@ export const webhookRoutes = (fastify: FastifyInstance) => {
   fastify.post("/payment", {
     schema: updateStatus.schema,
     handler: updateStatus.handler,
+    preValidation: authWebhook,
   });
 };

@@ -1,6 +1,5 @@
 import { config } from "../../../config.js";
 import { PaymentStatus } from "../../../domain/reservation.js";
-import type { CreateReservationDto } from "./index.js";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
 export const schema = {
@@ -40,5 +39,5 @@ export const handler = async (request: FastifyRequest, reply: FastifyReply) => {
     reservationId: params.reservation_id,
     status: params.status
   });
-  reply.status(201).send({ message: "hello from webhook" });
+  reply.status(201);
 };

@@ -56,7 +56,9 @@ describe("POST /webhook/payment", () => {
         const response = await test.server.inject({
           method: "POST",
           url: "/webhook/payment",
-          headers: {},
+            headers: {
+              'X-Webhook-Secret': 'secret'
+            },
           payload: {
             status: "CONFIRMED",
             reservation_id: 1,
@@ -87,7 +89,7 @@ describe("POST /webhook/payment", () => {
         {
           case: "status is invalid",
           expectedValidationErrorMessage:
-            'body/status must be equal to one of the allowed values',
+            "body/status must be equal to one of the allowed values",
           payload: {
             reservation_id: 1,
             status: "",
@@ -103,8 +105,7 @@ describe("POST /webhook/payment", () => {
         },
         {
           case: "reservation_id is invalid",
-          expectedValidationErrorMessage:
-            "body/reservation_id must be >= 1",
+          expectedValidationErrorMessage: "body/reservation_id must be >= 1",
           payload: {
             reservation_id: -1,
             status: "CONFIRMED",
@@ -115,18 +116,34 @@ describe("POST /webhook/payment", () => {
           const response = await test.server.inject({
             method: "POST",
             url: "/webhook/payment",
-            headers: {},
+            headers: {
+              'X-Webhook-Secret': 'secret'
+            },
             payload: payload,
           });
 
           const body = JSON.parse(response.body);
 
           expect(response.statusCode).toBe(400);
-          expect(body.message).toBe(
-            expectedValidationErrorMessage,
-          );
+          expect(body.message).toBe(expectedValidationErrorMessage);
         });
       });
+    });
+  });
+
+  describe("when request is authenticated", () => {
+    it("returns 401 (Unauthorized)", async () => {
+      const response = await test.server.inject({
+        method: "POST",
+        url: "/webhook/payment",
+        headers: {},
+        payload: {
+          status: "CONFIRMED",
+          reservation_id: 1,
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
     });
   });
 });
