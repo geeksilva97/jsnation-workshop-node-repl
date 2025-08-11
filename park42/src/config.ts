@@ -5,6 +5,7 @@ import { Env, type EnvType } from "./_lib/env.js";
 import { makePaymentService } from "./services/payment-api-service.js";
 import { makeCreateReservationService } from "./services/create-reservation-service.js";
 import { makeObjectionReservationRepository } from "./infrastructure/objection-reservation-repository.js";
+import { makeUpdatePaymentStatusService } from "./services/update-payment-status.js";
 
 const env = Env.getString<EnvType>("NODE_ENV", "development");
 
@@ -90,12 +91,17 @@ const createReservationUseCase = makeCreateReservationService({
   reservationRepository
 });
 
+const updatePaymentStatusUseCase = makeUpdatePaymentStatusService({
+  reservationRepository
+});
+
 export const config = {
   env,
   db,
   redis,
   http,
   createReservationUseCase,
+  updatePaymentStatusUseCase,
   secrets,
 };
 

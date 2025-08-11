@@ -1,9 +1,27 @@
 import { ReservationPeriod } from "../domain/reservation-period.js";
 import { ReservationRepository } from "../domain/reservation-repository.js";
-import { PaymentStatus, Reservation } from "../domain/reservation.js";
+import { type PaymentStatus, Reservation } from "../domain/reservation.js";
 import { ReservationModel } from "./database/models/reservation.js";
 
 class ObjectReservationRepository implements ReservationRepository {
+  async getById(reservationId: number): Promise<Reservation> {
+    const reservation = await ReservationModel.query().findById(reservationId);
+
+    if (!reservation) throw "notfound error";
+
+    return Reservation.fromPersistence({
+      amount: reservation.amount,
+      payment_status: reservation.payment_status as PaymentStatus,
+      id: reservation.id,
+      payment_token: reservation.payment_token,
+      period: {
+        end: reservation.end_at,
+        start: reservation.start_at,
+      },
+      price_token: reservation.price_token,
+    });
+  }
+
   async delete(reservationId: number): Promise<void> {
     await ReservationModel.query().deleteById(reservationId);
   }
@@ -24,11 +42,25 @@ class ObjectReservationRepository implements ReservationRepository {
     });
   }
 
-  updateStatus(
+  async updateStatus(
     id: number,
     status: Reservation["payment_status"],
   ): Promise<Reservation> {
-    throw new Error("Method not implemented.");
+    const reservation = await this.getById(id);
+    const updatedRows = await ReservationModel.query()
+      .update({ payment_status: status })
+      .where({ id });
+
+    if (updatedRows !== 1) throw "something went wrong";
+
+    return Reservation.fromPersistence({
+      amount: reservation.amount,
+      payment_status: status,
+      id,
+      payment_token: reservation.payment_token,
+      period: reservation.period,
+      price_token: reservation.price_token,
+    });
   }
 
   async findByAttributes({

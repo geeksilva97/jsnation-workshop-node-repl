@@ -10,6 +10,7 @@ import { healthRoutes } from "./routes/health.js";
 import { priceRoutes } from "./routes/price.js";
 import { sessionRoutes } from "./routes/session.js";
 import { reservationRoutes } from "./reservation-controller/index.js";
+import { webhookRoutes } from "./webhook-controller/index.js";
 
 export const makeServer = async (dependencies: { queue: Queue }) => {
   const { queue } = dependencies;
@@ -54,6 +55,7 @@ export const makeServer = async (dependencies: { queue: Queue }) => {
   server.register(sessionRoutes);
   server.register(priceRoutes);
   server.register(reservationRoutes, { prefix: 'reservation' });
+  server.register(webhookRoutes, { prefix: 'webhook' });
 
   return server;
 };

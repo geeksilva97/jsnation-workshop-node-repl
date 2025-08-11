@@ -8,7 +8,6 @@ import {
   vi,
 } from "vitest";
 import { setupTest, type Test } from "../src/_lib/testSupport/setupTest.js";
-import { User } from "../src/infrastructure/database/models/user.js";
 import * as PriceToken from "../src/_lib/priceToken.js";
 import { createPaymentToken, getUser } from "./support/index.js";
 import { addMonthsSafely } from "../src/_lib/dates.js";
