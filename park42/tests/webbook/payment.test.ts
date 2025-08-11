@@ -57,7 +57,7 @@ describe("POST /webhook/payment", () => {
           method: "POST",
           url: "/webhook/payment",
             headers: {
-              'X-Webhook-Secret': 'secret'
+              'X-Webhook-Secret': 'cinderela-baiana'
             },
           payload: {
             status: "CONFIRMED",
@@ -117,7 +117,7 @@ describe("POST /webhook/payment", () => {
             method: "POST",
             url: "/webhook/payment",
             headers: {
-              'X-Webhook-Secret': 'secret'
+              'X-Webhook-Secret': 'cinderela-baiana'
             },
             payload: payload,
           });

@@ -1,7 +1,5 @@
-import { ReservationPeriod } from "../domain/reservation-period.js";
+import type { PaymentStatus} from "../domain/reservation.js";
 import type { ReservationRepository } from "../domain/reservation-repository.js";
-import { PaymentStatus, Reservation } from "../domain/reservation.js";
-import type { PaymentService } from "./payment-api-service.js";
 
 type DTO = {
   reservationId: number;
