@@ -1,4 +1,5 @@
 import { ReservationPeriod } from "../domain/reservation-period.js";
+import type { ReservationRepository } from "../domain/reservation-repository.js";
 import { Reservation } from "../domain/reservation.js";
 import { ReservationModel } from "../infrastructure/database/models/reservation.js";
 import type { PaymentService } from "./payment-api-service.js";
@@ -14,12 +15,14 @@ type ReservationDTO = {
 type ServiceDependencies = {
   maxMonths: number;
   paymentService: PaymentService;
+  reservationRepository: ReservationRepository;
 };
 
 class CreateReservationService {
   constructor(
     private readonly max_months: number,
     private readonly paymentService: PaymentService,
+    private readonly reservationRepository: ReservationRepository,
   ) {}
 
   async execute({
@@ -43,73 +46,51 @@ class CreateReservationService {
       payment_token,
     });
 
-    return await this.persist({
-      ...reservation,
-      user_id,
-    });
+    return await this.persist(user_id, reservation);
   }
 
-  private async persist({
-    amount,
-    payment_token,
-    price_token,
-    user_id,
-    period,
-  }: Reservation & { user_id: number }) {
-    const existingReservation = await ReservationModel.query()
-      .where({
-        amount: amount,
-        payment_token: payment_token,
-        price_token: price_token,
-        user_id,
-        start_at: period.start,
-        end_at: period.end,
-      })
-      .first();
+  private async persist(user_id: number, reservation: Reservation) {
+    const existingReservation = await this.reservationRepository.findByAttributes({
+     period: reservation.period ,
+     payment_token: reservation.payment_token,
+     price_token: reservation.price_token,
+     amount: reservation.amount,
+    });
 
     if (existingReservation) {
       return Reservation.fromPersistence({
-        id: existingReservation.id,
-        payment_token,
-        price_token,
-        amount,
-        period,
+        id: existingReservation.id as number,
+        payment_token: reservation.payment_token,
+        price_token: reservation.price_token,
+        amount: reservation.amount,
+        period: reservation.period,
       });
     }
 
-    const reservation = await ReservationModel.query().insert({
-      amount: amount,
-      payment_token: payment_token,
-      price_token: price_token,
-      payment_status: "PENDING",
-      user_id,
-      start_at: period.start,
-      end_at: period.end,
-    });
+    const createdReservation = await this.reservationRepository.store(user_id, reservation);
 
     try {
       // TODO: have a retry here?
       await this.paymentService.processPayment({
-        payment_token,
-        amount,
-        reservation_id: reservation.id,
+        payment_token: reservation.payment_token,
+        amount: reservation.amount,
+        reservation_id: createdReservation.id as number,
       });
 
       return Reservation.fromPersistence({
-        id: reservation.id,
-        payment_token,
-        price_token,
-        amount,
-        period,
+        id: createdReservation.id as number,
+        payment_token: reservation.payment_token,
+        price_token: reservation.price_token,
+        amount: reservation.amount,
+        period: reservation.period,
       });
     } catch (e) {
       console.error(`Error while calling the Mock Payment API`, e);
 
-      // what if this fails?
-      await reservation.$query().delete();
+      await this.reservationRepository.delete(createdReservation.id as number)
 
       throw {
-        message: "Unexpected error during the reservation creation"
+        message: "Unexpected error during the reservation creation",
       };
     }
   }
@@ -118,6 +99,11 @@ class CreateReservationService {
 export const makeCreateReservationService = ({
   maxMonths,
   paymentService,
+  reservationRepository,
 }: ServiceDependencies) => {
-  return new CreateReservationService(maxMonths, paymentService);
+  return new CreateReservationService(
+    maxMonths,
+    paymentService,
+    reservationRepository,
+  );
 };

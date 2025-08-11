@@ -1,11 +1,14 @@
 import { DomainError } from "../_lib/errors/domain-error.js";
 import type { ReservationPeriod } from "./reservation-period.js";
 
+export type PaymentStatus = "PENDING" | "CONFIRMED" | "EXPIRED" | "FAILED";
+
 type Params = {
   id?: number;
   period: ReservationPeriod;
   price_token: string;
   payment_token: string;
+  payment_status?: PaymentStatus;
   amount: number;
 };
 
@@ -14,6 +17,7 @@ export class Reservation {
   readonly period: ReservationPeriod;
   readonly price_token: string;
   readonly payment_token: string;
+  readonly payment_status: PaymentStatus;
   readonly amount: number;
 
   private constructor(params: Params) {
@@ -22,6 +26,7 @@ export class Reservation {
     this.price_token = params.price_token;
     this.payment_token = params.payment_token;
     this.amount = params.amount;
+    this.payment_status = params.payment_status || "PENDING";
   }
 
   static create(params: Params) {
@@ -32,6 +37,23 @@ export class Reservation {
   static fromPersistence(params: Params & { id: number }) {
     Reservation.validate(params);
     return new Reservation(params);
+  }
+
+  updateStatus(newStatus: PaymentStatus) {
+    if (this.isTerminalStatus()) {
+      throw DomainError.create({
+        message: `Cannot update status from terminal state: ${this.payment_status}`,
+      });
+    }
+
+    return new Reservation({
+      ...this,
+      payment_status: newStatus,
+    });
+  }
+
+  private isTerminalStatus(): boolean {
+    return ["CONFIRMED", "EXPIRED", "FAILED"].includes(this.payment_status);
   }
 
   private static validate(params: Params) {

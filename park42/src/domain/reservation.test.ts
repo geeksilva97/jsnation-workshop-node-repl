@@ -23,10 +23,44 @@ describe("Reservation", () => {
     expect(reservation).instanceof(Reservation);
     expect(reservation).toMatchObject({
       amount: 10000,
-      payment_token: 'blah',
-      price_token: 'blah',
-      period
+      payment_token: "blah",
+      price_token: "blah",
+      period,
+      payment_status: "PENDING",
     });
+  });
+
+  it("updates the reservation payment status", () => {
+    const reservation = Reservation.create({
+      period,
+      amount: 10000,
+      payment_token: "blah",
+      price_token: "blah",
+    });
+
+    const updated = reservation.updateStatus("CONFIRMED");
+
+    expect(updated).instanceof(Reservation);
+    expect(updated).toMatchObject({
+      amount: 10000,
+      payment_token: "blah",
+      price_token: "blah",
+      period,
+      payment_status: "CONFIRMED",
+    });
+  });
+
+  it("throws erro when status transition is invalid", () => {
+    const reservation = Reservation.create({
+      period,
+      amount: 10000,
+      payment_token: "blah",
+      price_token: "blah",
+    }).updateStatus("EXPIRED");
+
+    expect(() => {
+      reservation.updateStatus("CONFIRMED");
+    }).toThrowError("Cannot update status from terminal state: EXPIRED");
   });
 
   it("throws error when price_token is invalid", () => {

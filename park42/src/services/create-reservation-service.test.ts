@@ -1,8 +1,22 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { setupTest, Test } from "../_lib/testSupport/setupTest.js";
 import { User } from "../infrastructure/database/models/user.js";
 import { makeCreateReservationService } from "./create-reservation-service.js";
-import { ReservationModel } from "../infrastructure/database/models/reservation.js";
+
+const reservationRepository = {
+  store: vi.fn().mockResolvedValue({ id: 42 }),
+  delete: vi.fn().mockResolvedValue(null),
+  updateStatus: vi.fn().mockResolvedValue({}),
+  findByAttributes: vi.fn().mockResolvedValue({ id: 42 }),
+};
 
 describe("CreateReservationService", () => {
   let test: Test;
@@ -36,27 +50,27 @@ describe("CreateReservationService", () => {
         const createReservationService = makeCreateReservationService({
           maxMonths: 3,
           paymentService,
+          reservationRepository,
         });
 
         const reservation = await createReservationService.execute({
           start_at: new Date(),
-          end_at: new Date('2025-01-02'),
+          end_at: new Date("2025-01-02"),
           amount: 1000,
-          price_token: 'price-token',
-          payment_token: 'payment-token',
-          user_id: user.id
+          price_token: "price-token",
+          payment_token: "payment-token",
+          user_id: user.id,
         });
 
-
         expect(reservation).toMatchObject({
-          id: 1,
+          id: 42,
           period: {
             start: new Date(),
-            end: new Date('2025-01-02')
+            end: new Date("2025-01-02"),
           },
           amount: 1000,
-          payment_token: 'payment-token',
-          price_token: 'price-token'
+          payment_token: "payment-token",
+          price_token: "price-token",
         });
       });
     });
@@ -65,33 +79,37 @@ describe("CreateReservationService", () => {
       it("does not persist the reservation", async () => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date("2025-01-01"));
+        reservationRepository.store.mockClear();
         const user = await User.query().insert({
           email: "xuxa@soparabaixinhos",
           password: "ilarie123",
         });
 
         const paymentService = {
-          processPayment: vi.fn().mockRejectedValue({ errors: ['payment_token is invalid'] }),
+          processPayment: vi
+            .fn()
+            .mockRejectedValue({ errors: ["payment_token is invalid"] }),
         };
 
+        reservationRepository.findByAttributes.mockResolvedValue(null);
         const createReservationService = makeCreateReservationService({
           maxMonths: 3,
           paymentService,
+          reservationRepository,
         });
 
-        const countReservationsBefore = await ReservationModel.query().resultSize();
         await expect(async () => {
           await createReservationService.execute({
             start_at: new Date(),
-            end_at: new Date('2025-01-02'),
+            end_at: new Date("2025-01-02"),
             amount: 1000,
-            price_token: 'price-token',
-            payment_token: 'payment-token',
-            user_id: user.id
+            price_token: "price-token",
+            payment_token: "payment-token",
+            user_id: user.id,
           });
-        }).rejects.toThrow('Unexpected error during the reservation creation');
-        const countReservationsAfter= await ReservationModel.query().resultSize();
-        expect(countReservationsBefore).toBe(countReservationsAfter);
+        }).rejects.toThrow("Unexpected error during the reservation creation");
+        expect(reservationRepository.store).toHaveBeenCalledOnce();
+        expect(reservationRepository.delete).toHaveBeenCalledOnce();
       });
     });
   });

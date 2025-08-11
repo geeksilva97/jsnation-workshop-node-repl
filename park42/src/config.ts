@@ -4,6 +4,7 @@ import { pino } from "pino";
 import { Env, type EnvType } from "./_lib/env.js";
 import { makePaymentService } from "./services/payment-api-service.js";
 import { makeCreateReservationService } from "./services/create-reservation-service.js";
+import { makeObjectionReservationRepository } from "./infrastructure/objection-reservation-repository.js";
 
 const env = Env.getString<EnvType>("NODE_ENV", "development");
 
@@ -82,9 +83,11 @@ const secrets = {
   paymentApiSecret: Env.getString("PAYMENT_API_SECRET", "secret"),
 };
 
+const reservationRepository = makeObjectionReservationRepository();
 const createReservationUseCase = makeCreateReservationService({
   maxMonths: maxMonthsInterval,
   paymentService,
+  reservationRepository
 });
 
 export const config = {
