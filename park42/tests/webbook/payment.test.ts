@@ -8,15 +8,9 @@ import {
   vi,
 } from "vitest";
 import { setupTest, type Test } from "../../src/_lib/testSupport/setupTest.js";
-import { makeObjectionReservationRepository } from "../../src/infrastructure/objection-reservation-repository.js";
 import { getUser } from "../support/index.js";
 import { createReservation, getReservation } from "../support/reservation.js";
-import { PaymentStatus } from "../../src/domain/reservation.js";
-
-// const getReservation = async (reservationId: number) => {
-//   const reservationRepository = makeObjectionReservationRepository();
-//   return await reservationRepository.getById(reservationId);
-// };
+import type { PaymentStatus } from "../../src/domain/reservation.js";
 
 describe("POST /webhook/payment", () => {
   let test: Test;
@@ -54,9 +48,9 @@ describe("POST /webhook/payment", () => {
         const updatedReservation = await getReservation(reservation.id);
 
         expect(response.statusCode).toBe(201);
-        expect(reservation.id).toBe(updatedReservation.id);
+        expect(reservation.id).toBe(updatedReservation?.id);
         expect(reservation.payment_status).toBe("PENDING");
-        expect(updatedReservation.payment_status).toBe("CONFIRMED");
+        expect(updatedReservation?.payment_status).toBe("CONFIRMED");
       });
     });
 

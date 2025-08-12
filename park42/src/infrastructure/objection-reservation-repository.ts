@@ -2,6 +2,8 @@ import { type PaymentStatus, Reservation } from "../domain/reservation.js";
 import type { ReservationRepository } from "../domain/reservation-repository.js";
 import { ReservationModel } from "./database/models/reservation.js";
 import type { ReservationPeriod } from "../domain/reservation-period.js";
+import { RecordNotFoundError } from "../_lib/errors/record-not-found-error.js";
+import { UpdateRecordError } from "../_lib/errors/update-record-error.js";
 
 class ObjectionReservationRepository implements ReservationRepository {
   async findByStatusOlderThan(
@@ -38,16 +40,20 @@ class ObjectionReservationRepository implements ReservationRepository {
       .whereIn("id", ids);
 
     if (updatedRows !== ids.length) {
-      throw new Error(
-        `Expected to update ${ids.length} reservations, but updated ${updatedRows}`,
-      );
+      throw UpdateRecordError.create({
+        message: `Expected to update ${ids.length} reservations, but updated ${updatedRows}`,
+      });
     }
   }
 
   async getById(reservationId: number): Promise<Reservation> {
     const reservation = await ReservationModel.query().findById(reservationId);
 
-    if (!reservation) throw "notfound error";
+    if (!reservation) {
+      throw RecordNotFoundError.create({
+        message: `Reservation ${reservationId} not found`,
+      });
+    }
 
     return Reservation.fromPersistence({
       amount: reservation.amount,
@@ -88,20 +94,31 @@ class ObjectionReservationRepository implements ReservationRepository {
     status: Reservation["payment_status"],
   ): Promise<Reservation> {
     const reservation = await this.getById(id);
-    const updatedRows = await ReservationModel.query()
-      .update({ payment_status: status })
-      .where({ id });
+    try {
+      const updatedRows = await ReservationModel.query()
+        .update({ payment_status: status })
+        .where({ id });
 
-    if (updatedRows !== 1) throw "something went wrong";
+      if (updatedRows !== 1) {
+        throw UpdateRecordError.create({
+          message: `Failed to update reservation with id ${id}.`,
+        });
+      }
 
-    return Reservation.fromPersistence({
-      amount: reservation.amount,
-      payment_status: status,
-      id,
-      payment_token: reservation.payment_token,
-      period: reservation.period,
-      price_token: reservation.price_token,
-    });
+      return Reservation.fromPersistence({
+        amount: reservation.amount,
+        payment_status: status,
+        id,
+        payment_token: reservation.payment_token,
+        period: reservation.period,
+        price_token: reservation.price_token,
+      });
+    } catch (error) {
+      throw UpdateRecordError.create({
+        message: `Failed to update reservation with id ${id}.`,
+        details: [{ originalError: error }],
+      });
+    }
   }
 
   async findByAttributes({
