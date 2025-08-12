@@ -86,6 +86,7 @@ const paymentService = makePaymentService({
 });
 
 const maxMonthsInterval = Env.getNumber("MAX_MONTHS_INTERVAL", 3);
+const maxMinutsBeforeExpiring = Env.getNumber("MAX_MINUTES_BEFORE_EXPIRING", 15);
 
 const secrets = {
   jwtSecret: Env.getString("JWT_SECRET", "park42-secret"),
@@ -113,6 +114,7 @@ export const config = {
   secrets,
   queues,
   reservationRepository,
+  maxMinutsBeforeExpiring
 };
 
 export type Config = typeof config;
