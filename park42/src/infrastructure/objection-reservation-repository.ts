@@ -14,19 +14,7 @@ class ObjectionReservationRepository implements ReservationRepository {
       .where("payment_status", status)
       .where("created_at", "<=", date);
 
-    return models.map((model) =>
-      Reservation.fromPersistence({
-        id: model.id,
-        amount: model.amount,
-        payment_status: model.payment_status as PaymentStatus,
-        payment_token: model.payment_token,
-        period: {
-          start: model.start_at,
-          end: model.end_at,
-        },
-        price_token: model.price_token,
-      }),
-    );
+    return models.map((model) => this.toEntity(model));
   }
 
   async updateStatusBatch(
@@ -55,38 +43,25 @@ class ObjectionReservationRepository implements ReservationRepository {
       });
     }
 
-    return Reservation.fromPersistence({
-      amount: reservation.amount,
-      payment_status: reservation.payment_status as PaymentStatus,
-      id: reservation.id,
-      payment_token: reservation.payment_token,
-      period: {
-        end: reservation.end_at,
-        start: reservation.start_at,
-      },
-      price_token: reservation.price_token,
-    });
+    return this.toEntity(reservation);
   }
 
   async delete(reservationId: number): Promise<void> {
     await ReservationModel.query().deleteById(reservationId);
   }
 
-  async store(user_id: number, reservation: Reservation): Promise<Reservation> {
+  async store(reservation: Reservation): Promise<Reservation> {
     const result = await ReservationModel.query().insert({
       amount: reservation.amount,
       payment_status: reservation.payment_status,
       price_token: reservation.price_token,
       payment_token: reservation.payment_token,
-      user_id,
+      user_id: reservation.userId!,
       start_at: reservation.period.start,
       end_at: reservation.period.end,
     });
 
-    return Reservation.fromPersistence({
-      ...reservation,
-      id: result.id,
-    });
+    return this.toEntity(result);
   }
 
   async updateStatus(
@@ -144,15 +119,23 @@ class ObjectionReservationRepository implements ReservationRepository {
 
     if (!existingReservation) return null;
 
+    return this.toEntity(existingReservation);
+  }
+
+  private toEntity(model: ReservationModel) {
     return Reservation.fromPersistence({
-      amount: existingReservation.amount,
-      payment_status: existingReservation.payment_status as PaymentStatus,
-      price_token: existingReservation.price_token,
-      payment_token: existingReservation.payment_token,
-      period: period,
-      id: existingReservation.id,
+      id: model.id,
+      amount: model.amount,
+      payment_status: model.payment_status as PaymentStatus,
+      payment_token: model.payment_token,
+      period: {
+        start: model.start_at,
+        end: model.end_at,
+      },
+      price_token: model.price_token,
     });
   }
+
 }
 
 export const makeObjectionReservationRepository = () => {

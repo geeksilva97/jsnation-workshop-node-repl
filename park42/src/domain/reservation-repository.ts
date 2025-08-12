@@ -2,7 +2,7 @@ import type { Reservation } from "./reservation.js";
 import type { ReservationPeriod } from "./reservation-period.js";
 
 export type ReservationRepository = {
-  store(user_id: number, reservation: Reservation): Promise<Reservation>;
+  store(reservation: Reservation): Promise<Reservation>;
   delete(reservationId: number): Promise<void>;
   getById(reservationId: number): Promise<Reservation>;
   findByStatusOlderThan(

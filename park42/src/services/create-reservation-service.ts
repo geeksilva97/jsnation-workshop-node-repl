@@ -43,12 +43,13 @@ class CreateReservationService {
       price_token,
       period,
       payment_token,
+      userId: user_id
     });
 
-    return await this.persist(user_id, reservation);
+    return await this.persist(reservation);
   }
 
-  private async persist(user_id: number, reservation: Reservation) {
+  private async persist(reservation: Reservation) {
     const existingReservation = await this.reservationRepository.findByAttributes({
      period: reservation.period ,
      payment_token: reservation.payment_token,
@@ -60,7 +61,7 @@ class CreateReservationService {
       return existingReservation;
     }
 
-    const createdReservation = await this.reservationRepository.store(user_id, reservation);
+    const createdReservation = await this.reservationRepository.store(reservation);
 
     try {
       // TODO: have a retry here?

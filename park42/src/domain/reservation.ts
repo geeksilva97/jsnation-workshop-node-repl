@@ -10,6 +10,7 @@ type Params = {
   payment_token: string;
   payment_status?: PaymentStatus;
   amount: number;
+  userId?: number;
 };
 
 export class Reservation {
@@ -19,9 +20,11 @@ export class Reservation {
   readonly payment_token: string;
   readonly payment_status: PaymentStatus;
   readonly amount: number;
+  readonly userId?: number;
 
   private constructor(params: Params) {
     if (params.id) this.id = params.id;
+    if (params.userId) this.userId = params.userId;
     this.period = params.period;
     this.price_token = params.price_token;
     this.payment_token = params.payment_token;
