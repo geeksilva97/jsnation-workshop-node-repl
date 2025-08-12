@@ -1,7 +1,6 @@
 import { ReservationPeriod } from "../domain/reservation-period.js";
 import type { ReservationRepository } from "../domain/reservation-repository.js";
 import { Reservation } from "../domain/reservation.js";
-import { ReservationModel } from "../infrastructure/database/models/reservation.js";
 import type { PaymentService } from "./payment-api-service.js";
 
 type ReservationDTO = {
@@ -58,13 +57,7 @@ class CreateReservationService {
     });
 
     if (existingReservation) {
-      return Reservation.fromPersistence({
-        id: existingReservation.id as number,
-        payment_token: reservation.payment_token,
-        price_token: reservation.price_token,
-        amount: reservation.amount,
-        period: reservation.period,
-      });
+      return existingReservation;
     }
 
     const createdReservation = await this.reservationRepository.store(user_id, reservation);

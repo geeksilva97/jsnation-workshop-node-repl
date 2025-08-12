@@ -64,13 +64,6 @@ describe("CreateReservationService", () => {
 
         expect(reservation).toMatchObject({
           id: 42,
-          period: {
-            start: new Date(),
-            end: new Date("2025-01-02"),
-          },
-          amount: 1000,
-          payment_token: "payment-token",
-          price_token: "price-token",
         });
       });
     });

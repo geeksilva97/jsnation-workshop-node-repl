@@ -5,21 +5,11 @@ import {
   describe,
   expect,
   it,
-  vi,
 } from "vitest";
 import { setupTest, Test } from "../_lib/testSupport/setupTest.js";
 import { makeUpdatePaymentStatusService } from "./update-payment-status.js";
 import { Reservation } from "../domain/reservation.js";
-
-const reservationRepository = {
-  getById: vi.fn().mockResolvedValue({ id: 42 }),
-  store: vi.fn().mockResolvedValue({ id: 42 }),
-  delete: vi.fn().mockResolvedValue(null),
-  updateStatus: vi.fn().mockResolvedValue({}),
-  findByAttributes: vi.fn().mockResolvedValue({ id: 42 }),
-  findByStatusOlderThan: vi.fn(),
-  updateStatusBatch: vi.fn(),
-};
+import { reservationRepository } from "../../tests/support/stubs.js";
 
 describe("UpdatePaymentStatus", () => {
   let test: Test;
