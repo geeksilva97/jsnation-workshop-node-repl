@@ -8,29 +8,15 @@ import {
   vi,
 } from "vitest";
 import { setupTest, type Test } from "../../src/_lib/testSupport/setupTest.js";
-import { Reservation } from "../../src/domain/reservation.js";
 import { makeObjectionReservationRepository } from "../../src/infrastructure/objection-reservation-repository.js";
 import { getUser } from "../support/index.js";
+import { createReservation, getReservation } from "../support/reservation.js";
+import { PaymentStatus } from "../../src/domain/reservation.js";
 
-const createReservation = async (userId: number) => {
-  const reservationRepository = makeObjectionReservationRepository();
-  const reservation = Reservation.create({
-    amount: 50000,
-    price_token: "price_token",
-    payment_token: "payment_token",
-    period: {
-      start: new Date(),
-      end: new Date(),
-    },
-  });
-
-  return await reservationRepository.store(userId, reservation);
-};
-
-const getReservation = async (reservationId: number) => {
-  const reservationRepository = makeObjectionReservationRepository();
-  return await reservationRepository.getById(reservationId);
-};
+// const getReservation = async (reservationId: number) => {
+//   const reservationRepository = makeObjectionReservationRepository();
+//   return await reservationRepository.getById(reservationId);
+// };
 
 describe("POST /webhook/payment", () => {
   let test: Test;
@@ -56,23 +42,51 @@ describe("POST /webhook/payment", () => {
         const response = await test.server.inject({
           method: "POST",
           url: "/webhook/payment",
-            headers: {
-              'X-Webhook-Secret': 'cinderela-baiana'
-            },
+          headers: {
+            "X-Webhook-Secret": "cinderela-baiana",
+          },
           payload: {
             status: "CONFIRMED",
             reservation_id: 1,
           },
         });
 
-        const updatedReservation = await getReservation(
-          reservation.id as number,
-        );
+        const updatedReservation = await getReservation(reservation.id);
 
         expect(response.statusCode).toBe(201);
         expect(reservation.id).toBe(updatedReservation.id);
         expect(reservation.payment_status).toBe("PENDING");
         expect(updatedReservation.payment_status).toBe("CONFIRMED");
+      });
+    });
+
+    describe.each([
+      { currentStatus: "CONFIRMED" },
+      { currentStatus: "FAILED" },
+    ])("and the reservation is already $currentStatus", ({ currentStatus }) => {
+      it("returns 500 (Error)", async () => {
+        const { user } = await getUser(test);
+        await createReservation(user.id, {
+          payment_status: currentStatus as PaymentStatus,
+        });
+        const response = await test.server.inject({
+          method: "POST",
+          url: "/webhook/payment",
+          headers: {
+            "X-Webhook-Secret": "cinderela-baiana",
+          },
+          payload: {
+            status: "FAILED",
+            reservation_id: 1,
+          },
+        });
+
+        const body = JSON.parse(response.body);
+
+        expect(response.statusCode).toBe(500);
+        expect(body.message).toBe(
+          `Cannot update status from terminal state: ${currentStatus}`,
+        );
       });
     });
 
@@ -117,7 +131,7 @@ describe("POST /webhook/payment", () => {
             method: "POST",
             url: "/webhook/payment",
             headers: {
-              'X-Webhook-Secret': 'cinderela-baiana'
+              "X-Webhook-Secret": "cinderela-baiana",
             },
             payload: payload,
           });

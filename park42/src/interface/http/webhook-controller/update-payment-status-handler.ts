@@ -10,7 +10,7 @@ export const schema = {
     properties: {
       status: {
         type: "string",
-        enum: ["PENDING", "CONFIRMED", "FAILED", "EXPIRED"],
+        enum: ["CONFIRMED", "FAILED"],
       },
       reservation_id: {
         type: "number",
