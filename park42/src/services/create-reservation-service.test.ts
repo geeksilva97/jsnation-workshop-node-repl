@@ -10,13 +10,7 @@ import {
 import { setupTest, Test } from "../_lib/testSupport/setupTest.js";
 import { User } from "../infrastructure/database/models/user.js";
 import { makeCreateReservationService } from "./create-reservation-service.js";
-
-const reservationRepository = {
-  store: vi.fn().mockResolvedValue({ id: 42 }),
-  delete: vi.fn().mockResolvedValue(null),
-  updateStatus: vi.fn().mockResolvedValue({}),
-  findByAttributes: vi.fn().mockResolvedValue({ id: 42 }),
-};
+import { reservationRepository } from "../../tests/support/stubs.js";
 
 describe("CreateReservationService", () => {
   let test: Test;
