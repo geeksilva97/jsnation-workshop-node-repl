@@ -4,6 +4,14 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 
 export const schema = {
   security: [{ bearerAuth: [] }],
+  headers: {
+    type: "object",
+    properties: {
+      "x-webhook-secret": { type: "string" },
+    },
+    required: ["x-webhook-secret"],
+    additionalProperties: false,
+  },
   body: {
     type: "object",
     required: ["status", "reservation_id"],
@@ -34,10 +42,13 @@ export const schema = {
 };
 
 export const handler = async (request: FastifyRequest, reply: FastifyReply) => {
-  const params = request.body as { status: PaymentStatus; reservation_id: number };
+  const params = request.body as {
+    status: PaymentStatus;
+    reservation_id: number;
+  };
   await config.updatePaymentStatusUseCase.execute({
     reservationId: params.reservation_id,
-    status: params.status
+    status: params.status,
   });
   reply.status(201);
 };
