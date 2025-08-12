@@ -2,9 +2,13 @@ import { clean } from "knex-cleaner";
 import { makeDatabase } from "../../infrastructure/database/database.js";
 import { makeQueue } from "../../infrastructure/queue/queue.js";
 import { makeServer } from "../../interface/http/server.js";
+import { config } from "../../config.js";
 
 export const setupTest = async () => {
-  const queue = makeQueue("test-queue");
+  const queue = makeQueue("test-queue", {
+    host: config.redis.host,
+    port: config.redis.port,
+  });
   const server = await makeServer({ queue });
   const database = makeDatabase();
 

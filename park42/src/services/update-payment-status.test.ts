@@ -8,8 +8,6 @@ import {
   vi,
 } from "vitest";
 import { setupTest, Test } from "../_lib/testSupport/setupTest.js";
-import { User } from "../infrastructure/database/models/user.js";
-import { makeCreateReservationService } from "./create-reservation-service.js";
 import { makeUpdatePaymentStatusService } from "./update-payment-status.js";
 import { Reservation } from "../domain/reservation.js";
 
@@ -19,6 +17,8 @@ const reservationRepository = {
   delete: vi.fn().mockResolvedValue(null),
   updateStatus: vi.fn().mockResolvedValue({}),
   findByAttributes: vi.fn().mockResolvedValue({ id: 42 }),
+  findByStatusOlderThan: vi.fn(),
+  updateStatusBatch: vi.fn(),
 };
 
 describe("UpdatePaymentStatus", () => {

@@ -1,14 +1,13 @@
 import { config } from "./config.js";
 import { makeDatabase } from "./infrastructure/database/database.js";
-import { makeQueue } from "./infrastructure/queue/queue.js";
 import { makeServer } from "./interface/http/server.js";
 
 const database = makeDatabase();
-const queue = makeQueue("park42");
+const defaultQueue = config.queues.default;
 
-Promise.all([database.connect(), queue.waitUntilReady()])
+Promise.all([database.connect(), defaultQueue.waitUntilReady()])
   .then(async () => {
-    const server = await makeServer({ queue });
+    const server = await makeServer({ queue: defaultQueue });
 
     await server.listen({ host: config.http.host, port: config.http.port });
   })

@@ -6,8 +6,25 @@ import { makePaymentService } from "./services/payment-api-service.js";
 import { makeCreateReservationService } from "./services/create-reservation-service.js";
 import { makeObjectionReservationRepository } from "./infrastructure/objection-reservation-repository.js";
 import { makeUpdatePaymentStatusService } from "./services/update-payment-status.js";
+import { makeQueue } from "./infrastructure/queue/queue.js";
 
 const env = Env.getString<EnvType>("NODE_ENV", "development");
+
+const redisHost = Env.getString("REDIS_HOST", "127.0.0.1");
+const redisPort = Env.getNumber("REDIS_PORT", 6379);
+
+const redis = {
+  host: redisHost,
+  port: redisPort,
+  url: Env.getString("REDIS_URL", `redis://${redisHost}:${redisPort}`),
+};
+
+const queues = {
+  default: makeQueue("park42", {
+    host: redisHost,
+    port: redisPort,
+  }),
+};
 
 const loggerConfig = {
   level: "debug",
@@ -54,15 +71,6 @@ const db = {
   } satisfies Knex.Config,
 } as const;
 
-const redisHost = Env.getString("REDIS_HOST", "127.0.0.1");
-const redisPort = Env.getNumber("REDIS_PORT", 6379);
-
-const redis = {
-  host: redisHost,
-  port: redisPort,
-  url: Env.getString("REDIS_URL", `redis://${redisHost}:${redisPort}`),
-};
-
 const http = {
   host: Env.getString("HOST", "0.0.0.0"),
   port: Env.getNumber("PORT", 3000),
@@ -88,11 +96,11 @@ const reservationRepository = makeObjectionReservationRepository();
 const createReservationUseCase = makeCreateReservationService({
   maxMonths: maxMonthsInterval,
   paymentService,
-  reservationRepository
+  reservationRepository,
 });
 
 const updatePaymentStatusUseCase = makeUpdatePaymentStatusService({
-  reservationRepository
+  reservationRepository,
 });
 
 export const config = {
@@ -103,6 +111,8 @@ export const config = {
   createReservationUseCase,
   updatePaymentStatusUseCase,
   secrets,
+  queues,
+  reservationRepository,
 };
 
 export type Config = typeof config;

@@ -1,11 +1,12 @@
 import { Queue } from "bullmq";
-import { config } from "../../config.js";
 
-export function makeQueue(name: string) {
+type Connection = {
+  host: string;
+  port: number;
+};
+
+export function makeQueue(name: string, connection: Connection): Queue {
   return new Queue(name, {
-    connection: {
-      host: config.redis.host,
-      port: config.redis.port,
-    },
+    connection,
   });
 }
