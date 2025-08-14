@@ -77,7 +77,7 @@ describe("POST /webhook/payment", () => {
 
         const body = JSON.parse(response.body);
 
-        expect(response.statusCode).toBe(500);
+        expect(response.statusCode).toBe(422);
         expect(body.message).toBe(
           `Cannot update status from terminal state: ${currentStatus}`,
         );
@@ -88,16 +88,16 @@ describe("POST /webhook/payment", () => {
       describe.each([
         {
           case: "status is not present",
-          expectedValidationErrorMessage:
-            "body must have required property 'status'",
+          expectedField: "#/required",
+          expectedMessage: "must have required property 'status'",
           payload: {
             reservation_id: 1,
           },
         },
         {
           case: "status is invalid",
-          expectedValidationErrorMessage:
-            "body/status must be equal to one of the allowed values",
+          expectedField: "/status",
+          expectedMessage: "must be equal to one of the allowed values",
           payload: {
             reservation_id: 1,
             status: "",
@@ -105,21 +105,22 @@ describe("POST /webhook/payment", () => {
         },
         {
           case: "reservation_id is not present",
-          expectedValidationErrorMessage:
-            "body must have required property 'reservation_id'",
+          expectedField: "#/required",
+          expectedMessage: "must have required property 'reservation_id'",
           payload: {
             status: "CONFIMED",
           },
         },
         {
           case: "reservation_id is invalid",
-          expectedValidationErrorMessage: "body/reservation_id must be >= 1",
+          expectedField: "/reservation_id",
+          expectedMessage: "must be >= 1",
           payload: {
             reservation_id: -1,
             status: "CONFIRMED",
           },
         },
-      ])("and $case", ({ payload, expectedValidationErrorMessage }) => {
+      ])("and $case", ({ payload, expectedField, expectedMessage }) => {
         it("returns 400 (BadRequest)", async () => {
           const response = await test.server.inject({
             method: "POST",
@@ -133,7 +134,15 @@ describe("POST /webhook/payment", () => {
           const body = JSON.parse(response.body);
 
           expect(response.statusCode).toBe(400);
-          expect(body.message).toBe(expectedValidationErrorMessage);
+          expect(body.message).toBe("Validation error");
+          expect(body.errors).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                field: expectedField,
+                message: expectedMessage
+              })
+            ])
+          );
         });
       });
     });

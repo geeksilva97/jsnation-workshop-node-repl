@@ -170,39 +170,40 @@ describe("POST /reservation", () => {
       describe.each([
         {
           case: "start_at is invalid",
-          expectedValidationErrorMessage:
-            'body/start_at must match format "date-time"',
+          expectedField: "/start_at",
+          expectedMessage: 'must match format "date-time"',
           payload: {
             start_at: null,
           },
         },
         {
           case: "end_at is invalid",
-          expectedValidationErrorMessage:
-            'body/end_at must match format "date-time"',
+          expectedField: "/end_at", 
+          expectedMessage: 'must match format "date-time"',
           payload: {
             end_at: null,
           },
         },
         {
           case: "payment_token is invalid",
-          expectedValidationErrorMessage:
-            "body/payment_token must NOT have fewer than 1 characters",
+          expectedField: "/payment_token",
+          expectedMessage: "must NOT have fewer than 1 characters",
           payload: {
             payment_token: "",
           },
         },
         {
           case: "price_token is invalid",
-          expectedValidationErrorMessage:
-            "body/price_token must NOT have fewer than 1 characters",
+          expectedField: "/price_token",
+          expectedMessage: "must NOT have fewer than 1 characters",
           payload: {
             price_token: "",
           },
         },
         {
           case: "amount is invalid",
-          expectedValidationErrorMessage: "body/amount must be >= 1",
+          expectedField: "/amount",
+          expectedMessage: "must be >= 1",
           payload: {
             amount: -1,
           },
@@ -241,8 +242,14 @@ describe("POST /reservation", () => {
           const body = JSON.parse(response.body);
 
           expect(response.statusCode).toBe(400);
-          expect(body.message).toBe(
-            testCaseProps.expectedValidationErrorMessage,
+          expect(body.message).toBe("Validation error");
+          expect(body.errors).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                field: testCaseProps.expectedField,
+                message: testCaseProps.expectedMessage
+              })
+            ])
           );
         });
       });
