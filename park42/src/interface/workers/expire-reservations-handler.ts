@@ -7,6 +7,5 @@ const expireReservationsService = makeExpireReservationsService({
 });
 
 export const expireReservationsWorker = async () => {
-  console.log('gotta expire some reservations')
   await expireReservationsService.execute();
 };
