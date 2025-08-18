@@ -5,6 +5,7 @@ export type ReservationRepository = {
   store(reservation: Reservation): Promise<Reservation>;
   delete(reservationId: number): Promise<void>;
   getById(reservationId: number): Promise<Reservation>;
+  findOverlapping(period: ReservationPeriod): Promise<Reservation[]>;
   findByStatusOlderThan(
     status: Reservation["payment_status"],
     date: Date,

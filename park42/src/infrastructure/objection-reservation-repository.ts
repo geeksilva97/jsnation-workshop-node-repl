@@ -122,6 +122,16 @@ class ObjectionReservationRepository implements ReservationRepository {
     return this.toEntity(existingReservation);
   }
 
+  async findOverlapping(period: ReservationPeriod): Promise<Reservation[]> {
+    const models = await ReservationModel.query()
+      .where("start_at", "<=", period.end)
+      .where("end_at", ">=", period.start)
+      .whereIn("payment_status", ["PENDING", "CONFIRMED"])
+      .forUpdate();
+
+    return models.map((model) => this.toEntity(model));
+  }
+
   private toEntity(model: ReservationModel) {
     return Reservation.fromPersistence({
       id: model.id,
@@ -135,7 +145,6 @@ class ObjectionReservationRepository implements ReservationRepository {
       price_token: model.price_token,
     });
   }
-
 }
 
 export const makeObjectionReservationRepository = () => {
