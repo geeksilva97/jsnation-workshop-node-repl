@@ -11,7 +11,8 @@ import { priceRoutes } from "./routes/price.js";
 import { sessionRoutes } from "./routes/session.js";
 import { reservationRoutes } from "./reservation-controller/index.js";
 import { webhookRoutes } from "./webhook-controller/index.js";
-import { RecordNotFoundError, UpdateRecordError, DomainError } from "../../_lib/errors/index.js";
+import { RecordNotFoundError, UpdateRecordError, DomainError, NoAvailableSpotsError } from "../../_lib/errors/index.js";
+import { ErrorCode } from "../../_lib/errors/error-code.js";
 
 export const makeServer = async (dependencies: { queue: Queue }) => {
   const { queue } = dependencies;
@@ -72,7 +73,12 @@ export const makeServer = async (dependencies: { queue: Queue }) => {
     }
 
     if (DomainError.is(error)) {
-      return reply.status(422).send({ message: error.message });
+      const statusCode = error.code === ErrorCode.CONFLICT ? 409 : 422;
+      return reply.status(statusCode).send({ message: error.message });
+    }
+
+    if (NoAvailableSpotsError.is(error)) {
+      return reply.status(409).send({ message: error.message });
     }
 
     // Handle custom error objects (like from create-reservation-service)

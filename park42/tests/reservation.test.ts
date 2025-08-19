@@ -11,6 +11,8 @@ import { setupTest, type Test } from "../src/_lib/testSupport/setupTest.js";
 import * as PriceToken from "../src/_lib/priceToken.js";
 import { createPaymentToken, getUser } from "./support/index.js";
 import { addMonthsSafely } from "../src/_lib/dates.js";
+import { getReservations } from "./support/reservation.js";
+import { ReservationModel } from "../src/infrastructure/database/models/reservation.js";
 
 // https://stackoverflow.com/questions/76836909/referenceerror-cannot-access-mock-before-initialization-when-using-vitest
 const { mockProcessPayment } = vi.hoisted(() => {
@@ -75,6 +77,81 @@ describe("POST /reservation", () => {
         expect(body.amount).toBe(50000);
       });
 
+      describe("and multiple requests are sent concurrently", () => {
+        it.each(Array.from({ length: 10 }, (_, i) => i + 1))(
+          "allows reservation scheduling only if there are spots available (repeat %i)",
+          async () => {
+            const { authToken } = await getUser(test);
+            const payment_token = await createPaymentToken();
+            const start_at = new Date();
+            const end_at = new Date();
+
+            const price_token1 = PriceToken.generate({
+              start_at: start_at.toISOString(),
+              end_at: end_at.toISOString(),
+              price: 50000,
+              currency: "BRL",
+            });
+
+            const price_token2 = PriceToken.generate({
+              start_at: start_at.toISOString(),
+              end_at: end_at.toISOString(),
+              price: 50000,
+              currency: "BRL",
+            });
+
+            const req1 = test.server.inject({
+              method: "POST",
+              url: "/reservation",
+              headers: { Authorization: `Bearer ${authToken}` },
+              payload: {
+                start_at,
+                end_at,
+                price_token: price_token1,
+                payment_token,
+                amount: 50000,
+              },
+            });
+
+            const req2 = test.server.inject({
+              method: "POST",
+              url: "/reservation",
+              headers: { Authorization: `Bearer ${authToken}` },
+              payload: {
+                start_at,
+                end_at,
+                price_token: price_token2,
+                payment_token,
+                amount: 50000,
+              },
+            });
+
+            const [resp1, resp2] = await Promise.all([req1, req2]);
+
+            const [succeededResp, failedResp] =
+              resp1.statusCode === 200 ? [resp1, resp2] : [resp2, resp1];
+            const succeededBody = JSON.parse(succeededResp.body);
+            const failedBody = JSON.parse(failedResp.body);
+
+            const reservations = await ReservationModel.query();
+            const [createdReservation] = reservations;
+
+            expect(reservations.length).toBe(1);
+            expect(succeededResp.statusCode).toBe(200);
+            expect(succeededBody).toMatchObject({
+              id: createdReservation.id,
+              start_at: createdReservation.start_at.toISOString(),
+              end_at: createdReservation.end_at.toISOString(),
+              amount: createdReservation.amount,
+            });
+            expect(failedResp.statusCode).toBe(409);
+            expect(failedBody.message).toBe(
+              "No available spots for the selected period",
+            );
+          },
+        );
+      });
+
       describe("and reservation already exists", async () => {
         it("returns the already existing one", async () => {
           const { authToken } = await getUser(test);
@@ -136,7 +213,9 @@ describe("POST /reservation", () => {
           const start_at = new Date();
           const end_at = new Date();
 
-          mockProcessPayment.mockRejectedValue({ errors: ['payment_token is invalid'] })
+          mockProcessPayment.mockRejectedValue({
+            errors: ["payment_token is invalid"],
+          });
 
           const price_token = PriceToken.generate({
             start_at: start_at.toISOString(),
@@ -161,7 +240,9 @@ describe("POST /reservation", () => {
           const body = JSON.parse(response.body);
 
           expect(response.statusCode).toBe(500);
-          expect(body.message).toBe("Unexpected error during the reservation creation");
+          expect(body.message).toBe(
+            "Unexpected error during the reservation creation",
+          );
         });
       });
     });
@@ -178,7 +259,7 @@ describe("POST /reservation", () => {
         },
         {
           case: "end_at is invalid",
-          expectedField: "/end_at", 
+          expectedField: "/end_at",
           expectedMessage: 'must match format "date-time"',
           payload: {
             end_at: null,
@@ -247,9 +328,9 @@ describe("POST /reservation", () => {
             expect.arrayContaining([
               expect.objectContaining({
                 field: testCaseProps.expectedField,
-                message: testCaseProps.expectedMessage
-              })
-            ])
+                message: testCaseProps.expectedMessage,
+              }),
+            ]),
           );
         });
       });

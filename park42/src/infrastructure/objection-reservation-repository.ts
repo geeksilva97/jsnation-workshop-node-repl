@@ -4,8 +4,7 @@ import { ReservationModel } from "./database/models/reservation.js";
 import type { ReservationPeriod } from "../domain/reservation-period.js";
 import { RecordNotFoundError } from "../_lib/errors/record-not-found-error.js";
 import { UpdateRecordError } from "../_lib/errors/update-record-error.js";
-import { Transaction } from "objection";
-import { TransactionManager } from "./transaction-manager.js";
+import * as TransactionManager from "./transaction-manager.js";
 
 class ObjectionReservationRepository implements ReservationRepository {
   async findByStatusOlderThan(
@@ -55,8 +54,9 @@ class ObjectionReservationRepository implements ReservationRepository {
   async store(
     reservation: Reservation,
   ): Promise<Reservation> {
+    const txn = TransactionManager.getCurrentTransaction();
     const result = await ReservationModel.query(
-      TransactionManager.getCurrentTransaction(),
+      txn
     ).insert({
       amount: reservation.amount,
       payment_status: reservation.payment_status,
@@ -131,8 +131,9 @@ class ObjectionReservationRepository implements ReservationRepository {
   async findOverlapping(
     period: ReservationPeriod,
   ): Promise<Reservation[]> {
+    const txn = TransactionManager.getCurrentTransaction();
     const reservations = await ReservationModel.query(
-      TransactionManager.getCurrentTransaction(),
+      txn
     )
       .where("start_at", "<=", period.end)
       .where("end_at", ">=", period.start)

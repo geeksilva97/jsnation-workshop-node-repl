@@ -1,9 +1,9 @@
+import { NoAvailableSpotsError } from "../_lib/errors/no-available-spots-error.js";
 import { ReservationPeriod } from "../domain/reservation-period.js";
 import type { ReservationRepository } from "../domain/reservation-repository.js";
 import { Reservation } from "../domain/reservation.js";
-import { TransactionManager } from "../infrastructure/transaction-manager.js";
+import * as TransactionManager from "../infrastructure/transaction-manager.js";
 import type { PaymentService } from "./payment-api-service.js";
-import type { Transaction } from "objection";
 
 type ReservationDTO = {
   start_at: Date;
@@ -55,13 +55,14 @@ class CreateReservationService {
       return existingReservation;
     }
 
-    return this.persist(reservation);
+    // getting await back here (the error was being swallowed)
+    return await this.persist(reservation);
   }
 
   private async persist(reservation: Reservation) {
     const createdReservation = await TransactionManager.run(async () => {
       await this.checkAvailability(reservation.period);
-      return this.reservationRepository.store(reservation);
+      return await this.reservationRepository.store(reservation);
     });
 
     try {
@@ -115,9 +116,9 @@ class CreateReservationService {
     );
 
     if (!isAvailable) {
-      throw {
+      throw NoAvailableSpotsError.create({
         message: "No available spots for the selected period",
-      };
+      });
     }
   }
 

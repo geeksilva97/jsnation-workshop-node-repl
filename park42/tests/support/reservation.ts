@@ -20,3 +20,7 @@ export const createReservation = async (userId: number, opts?: Partial<CreateRes
 export const getReservation = async (reservationId: number) => {
   return await ReservationModel.query().findById(reservationId);
 };
+
+export const getReservations = async () => {
+  return await ReservationModel.query();
+};

@@ -1,29 +1,33 @@
-import { type Transaction, transaction } from "objection";
+import type { Transaction } from "objection";
 import { ReservationModel } from "./database/models/reservation.js";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { NoAvailableSpotsError } from "../_lib/errors/no-available-spots-error.js";
 
 const transactionContext = new AsyncLocalStorage<Transaction>();
 
-export class TransactionManager {
-  static async run<TReturn>(
-    operation: () => Promise<TReturn>,
-  ): Promise<TReturn> {
-    const trx = await transaction.start(ReservationModel.knex());
-
-    try {
+export const run = async <TReturn>(
+  operation: () => Promise<TReturn>,
+): Promise<TReturn> => {
+  try {
+    return await ReservationModel.transaction(async (trx) => {
+      await trx.raw("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE");
       return await transactionContext.run(trx, async () => {
-        const result = await operation();
-        await trx.commit();
-        return result;
+        return await operation();
       });
-    } catch (error) {
-      await trx.rollback();
-      throw error;
+    });
+  } catch (error) {
+    const errorCode = (error as any).code || (error as any).nativeError?.code;
+    if (errorCode === "40001") {
+      throw NoAvailableSpotsError.create({
+        message: "No available spots for the selected period",
+        details: [error],
+      });
     }
-  }
 
-  // Helper to get current transaction from context
-  static getCurrentTransaction(): Transaction | undefined {
-    return transactionContext.getStore();
+    throw error;
   }
-}
+};
+
+export const getCurrentTransaction = (): Transaction | undefined => {
+  return transactionContext.getStore();
+};
