@@ -1,7 +1,9 @@
 import { ReservationPeriod } from "../domain/reservation-period.js";
 import type { ReservationRepository } from "../domain/reservation-repository.js";
 import { Reservation } from "../domain/reservation.js";
+import { TransactionManager } from "../infrastructure/transaction-manager.js";
 import type { PaymentService } from "./payment-api-service.js";
+import type { Transaction } from "objection";
 
 type ReservationDTO = {
   start_at: Date;
@@ -53,25 +55,14 @@ class CreateReservationService {
       return existingReservation;
     }
 
-    await this.checkAvailability(reservation.period);
-    return await this.persist(reservation);
-  }
-
-  private async getExistingReservation(reservation: Reservation) {
-    const existingReservation =
-      await this.reservationRepository.findByAttributes({
-        period: reservation.period,
-        payment_token: reservation.payment_token,
-        price_token: reservation.price_token,
-        amount: reservation.amount,
-      });
-
-    return existingReservation;
+    return this.persist(reservation);
   }
 
   private async persist(reservation: Reservation) {
-    const createdReservation =
-      await this.reservationRepository.store(reservation);
+    const createdReservation = await TransactionManager.run(async () => {
+      await this.checkAvailability(reservation.period);
+      return this.reservationRepository.store(reservation);
+    });
 
     try {
       // TODO: have a retry here?
@@ -91,7 +82,8 @@ class CreateReservationService {
     } catch (e) {
       console.error(`Error while calling the Mock Payment API`, e);
 
-      await this.reservationRepository.delete(createdReservation.id as number);
+      // Removing this since the jobs marks it a expired later
+      // await this.reservationRepository.delete(createdReservation.id as number);
 
       throw {
         message: "Unexpected error during the reservation creation",
@@ -127,6 +119,18 @@ class CreateReservationService {
         message: "No available spots for the selected period",
       };
     }
+  }
+
+  private async getExistingReservation(reservation: Reservation) {
+    const existingReservation =
+      await this.reservationRepository.findByAttributes({
+        period: reservation.period,
+        payment_token: reservation.payment_token,
+        price_token: reservation.price_token,
+        amount: reservation.amount,
+      });
+
+    return existingReservation;
   }
 }
 

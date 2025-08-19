@@ -7,5 +7,6 @@ export const reservationRepository = {
   updateStatus: vi.fn().mockResolvedValue({}),
   findByAttributes: vi.fn().mockResolvedValue({ id: 42 }),
   findByStatusOlderThan: vi.fn(),
+  findOverlapping: vi.fn().mockResolvedValue([]),
   updateStatusBatch: vi.fn(),
 };

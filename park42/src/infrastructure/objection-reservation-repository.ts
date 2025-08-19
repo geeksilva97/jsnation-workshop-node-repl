@@ -4,6 +4,8 @@ import { ReservationModel } from "./database/models/reservation.js";
 import type { ReservationPeriod } from "../domain/reservation-period.js";
 import { RecordNotFoundError } from "../_lib/errors/record-not-found-error.js";
 import { UpdateRecordError } from "../_lib/errors/update-record-error.js";
+import { Transaction } from "objection";
+import { TransactionManager } from "./transaction-manager.js";
 
 class ObjectionReservationRepository implements ReservationRepository {
   async findByStatusOlderThan(
@@ -50,8 +52,12 @@ class ObjectionReservationRepository implements ReservationRepository {
     await ReservationModel.query().deleteById(reservationId);
   }
 
-  async store(reservation: Reservation): Promise<Reservation> {
-    const result = await ReservationModel.query().insert({
+  async store(
+    reservation: Reservation,
+  ): Promise<Reservation> {
+    const result = await ReservationModel.query(
+      TransactionManager.getCurrentTransaction(),
+    ).insert({
       amount: reservation.amount,
       payment_status: reservation.payment_status,
       price_token: reservation.price_token,
@@ -122,14 +128,18 @@ class ObjectionReservationRepository implements ReservationRepository {
     return this.toEntity(existingReservation);
   }
 
-  async findOverlapping(period: ReservationPeriod): Promise<Reservation[]> {
-    const models = await ReservationModel.query()
+  async findOverlapping(
+    period: ReservationPeriod,
+  ): Promise<Reservation[]> {
+    const reservations = await ReservationModel.query(
+      TransactionManager.getCurrentTransaction(),
+    )
       .where("start_at", "<=", period.end)
       .where("end_at", ">=", period.start)
       .whereIn("payment_status", ["PENDING", "CONFIRMED"])
       .forUpdate();
 
-    return models.map((model) => this.toEntity(model));
+    return reservations.map((model) => this.toEntity(model));
   }
 
   private toEntity(model: ReservationModel) {

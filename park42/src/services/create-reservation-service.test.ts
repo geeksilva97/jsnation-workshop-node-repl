@@ -43,6 +43,7 @@ describe("CreateReservationService", () => {
 
         const createReservationService = makeCreateReservationService({
           maxMonths: 3,
+          maxSpots: 5000,
           paymentService,
           reservationRepository,
         });
@@ -81,6 +82,7 @@ describe("CreateReservationService", () => {
         reservationRepository.findByAttributes.mockResolvedValue(null);
         const createReservationService = makeCreateReservationService({
           maxMonths: 3,
+          maxSpots: 5000,
           paymentService,
           reservationRepository,
         });
@@ -96,7 +98,6 @@ describe("CreateReservationService", () => {
           });
         }).rejects.toThrow("Unexpected error during the reservation creation");
         expect(reservationRepository.store).toHaveBeenCalledOnce();
-        expect(reservationRepository.delete).toHaveBeenCalledOnce();
       });
     });
   });

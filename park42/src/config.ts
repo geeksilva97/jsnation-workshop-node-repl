@@ -86,6 +86,7 @@ const paymentService = makePaymentService({
 });
 
 const maxMonthsInterval = Env.getNumber("MAX_MONTHS_INTERVAL", 3);
+const maxSpots = Env.getNumber("MAX_SPOTS", 50_000);
 const maxMinutsBeforeExpiring = Env.getNumber("MAX_MINUTES_BEFORE_EXPIRING", 15);
 
 const secrets = {
@@ -96,6 +97,7 @@ const secrets = {
 const reservationRepository = makeObjectionReservationRepository();
 const createReservationUseCase = makeCreateReservationService({
   maxMonths: maxMonthsInterval,
+  maxSpots,
   paymentService,
   reservationRepository,
 });
