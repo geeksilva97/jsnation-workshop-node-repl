@@ -60,10 +60,27 @@ class CreateReservationService {
   }
 
   private async persist(reservation: Reservation) {
-    const createdReservation = await TransactionManager.run(async () => {
-      await this.checkAvailability(reservation.period);
-      return await this.reservationRepository.store(reservation);
-    });
+    const createDateLockKey = (period: ReservationPeriod): string => {
+      const startDate = period.start.toISOString().split("T")[0]; // "2025-01-01"
+      const endDate = period.end.toISOString().split("T")[0]; // "2025-01-01"
+
+      // For same-day reservations, use the date
+      // For multi-day reservations, combine start and end
+      if (startDate === endDate) {
+        return `reservation_${startDate}`;
+      } else {
+        return `reservation_${startDate}_to_${endDate}`;
+      }
+    };
+
+    const lockKey = createDateLockKey(reservation.period);
+    const createdReservation = await TransactionManager.run(
+      lockKey,
+      async () => {
+        await this.checkAvailability(reservation.period);
+        return await this.reservationRepository.store(reservation);
+      },
+    );
 
     try {
       // TODO: have a retry here?
