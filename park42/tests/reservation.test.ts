@@ -110,7 +110,6 @@ describe("POST /reservation", () => {
           const [successResponse] = successes;
           const successedBody = JSON.parse(successResponse.body);
           const errorMessages = Array.from(new Set(conflicts.map((r) => JSON.parse(r.body).message)));
-          console.log({errorMessages})
 
           const reservations = await getReservations();
           const [createdReservation] = reservations;
