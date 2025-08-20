@@ -124,7 +124,9 @@ describe("POST /reservation", () => {
             amount: createdReservation.amount,
           });
           expect(errorMessages.length).toEqual(1);
-          expect(errorMessages[0]).toEqual('No available spots for the selected period');
+          expect(errorMessages).toEqual([
+            'No available spots for the selected period'
+          ]);
         });
       });
 
