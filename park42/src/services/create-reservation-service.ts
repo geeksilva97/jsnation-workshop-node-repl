@@ -60,20 +60,9 @@ class CreateReservationService {
   }
 
   private async persist(reservation: Reservation) {
-    const createDateLockKey = (period: ReservationPeriod): string => {
-      const startDate = period.start.toISOString().split("T")[0]; // "2025-01-01"
-      const endDate = period.end.toISOString().split("T")[0]; // "2025-01-01"
-
-      // For same-day reservations, use the date
-      // For multi-day reservations, combine start and end
-      if (startDate === endDate) {
-        return `reservation_${startDate}`;
-      } else {
-        return `reservation_${startDate}_to_${endDate}`;
-      }
-    };
-
-    const lockKey = createDateLockKey(reservation.period);
+    const startDate = reservation.period.start.toISOString().split("T")[0];
+    const endDate = reservation.period.end.toISOString().split("T")[0];
+    const lockKey = `reservation_${startDate}_to_${endDate}`;
     const createdReservation = await TransactionManager.run(
       lockKey,
       async () => {
@@ -99,9 +88,6 @@ class CreateReservationService {
       });
     } catch (e) {
       console.error(`Error while calling the Mock Payment API`, e);
-
-      // Removing this since the jobs marks it a expired later
-      // await this.reservationRepository.delete(createdReservation.id as number);
 
       throw {
         message: "Unexpected error during the reservation creation",
