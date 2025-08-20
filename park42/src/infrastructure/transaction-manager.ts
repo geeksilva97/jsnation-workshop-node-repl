@@ -18,25 +18,13 @@ export const run = async <TReturn>(
   lockId: string,
   operation: () => Promise<TReturn>,
 ): Promise<TReturn> => {
-  try {
-    return await ReservationModel.transaction(async (trx) => {
-      // await trx.raw("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE");
-      await trx.raw("SELECT pg_advisory_xact_lock(?)", [hashString(lockId)]);
-      return await transactionContext.run(trx, async () => {
-        return await operation();
-      });
+  return await ReservationModel.transaction(async (trx) => {
+    // await trx.raw("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE");
+    await trx.raw("SELECT pg_advisory_xact_lock(?)", [hashString(lockId)]);
+    return await transactionContext.run(trx, async () => {
+      return await operation();
     });
-  } catch (error) {
-    const errorCode = (error as any).code || (error as any).nativeError?.code;
-    if (errorCode === "40001") {
-      throw NoAvailableSpotsError.create({
-        message: "No available spots for the selected period",
-        details: [error],
-      });
-    }
-
-    throw error;
-  }
+  });
 };
 
 export const getCurrentTransaction = (): Transaction | undefined => {
