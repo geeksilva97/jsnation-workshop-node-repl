@@ -109,7 +109,9 @@ describe("POST /reservation", () => {
           const conflicts = responses.filter((r) => r.statusCode === 409);
           const [successResponse] = successes;
           const successedBody = JSON.parse(successResponse.body);
-          const errorMessages = Array.from(new Set(conflicts.map((r) => JSON.parse(r.body).message)));
+          const errorMessages = Array.from(
+            new Set(conflicts.map((r) => JSON.parse(r.body).message)),
+          );
 
           const reservations = await getReservations();
           const [createdReservation] = reservations;
@@ -125,8 +127,65 @@ describe("POST /reservation", () => {
           });
           expect(errorMessages.length).toEqual(1);
           expect(errorMessages).toEqual([
-            'No available spots for the selected period'
+            "No available spots for the selected period",
           ]);
+        });
+
+        describe("and there are multiple intervals", () => {
+          it("schedules only one", async () => {
+            const { authToken } = await getUser(test);
+            const payment_token = await createPaymentToken();
+            const start_at = new Date();
+
+            const requests = Array.from({ length: 10 }, (_, i) => {
+              const end_at = new Date(
+                start_at.getTime() + (i * 24 * 60 * 60 * 1000),
+              );
+              return test.server.inject({
+                method: "POST",
+                url: "/reservation",
+                headers: { Authorization: `Bearer ${authToken}` },
+                payload: {
+                  start_at,
+                  end_at,
+                  price_token: PriceToken.generate({
+                    start_at: start_at.toISOString(),
+                    end_at: end_at.toISOString(),
+                    price: 50000,
+                    currency: "BRL",
+                  }),
+                  payment_token,
+                  amount: 50000,
+                },
+              });
+            });
+
+            const responses = await Promise.all(requests);
+            const successes = responses.filter((r) => r.statusCode === 200);
+            const conflicts = responses.filter((r) => r.statusCode === 409);
+            const [successResponse] = successes;
+            const successedBody = JSON.parse(successResponse.body);
+            const errorMessages = Array.from(
+              new Set(conflicts.map((r) => JSON.parse(r.body).message)),
+            );
+
+            const reservations = await getReservations();
+            const [createdReservation] = reservations;
+
+            expect(reservations.length).toBe(1);
+            expect(successes.length).toBe(1);
+            expect(conflicts.length).toBe(requests.length - 1);
+            expect(successedBody).toMatchObject({
+              id: createdReservation.id,
+              start_at: createdReservation.start_at.toISOString(),
+              end_at: createdReservation.end_at.toISOString(),
+              amount: createdReservation.amount,
+            });
+            expect(errorMessages.length).toEqual(1);
+            expect(errorMessages).toEqual([
+              "No available spots for the selected period",
+            ]);
+          });
         });
       });
 

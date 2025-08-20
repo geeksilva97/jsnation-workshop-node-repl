@@ -62,9 +62,15 @@ class CreateReservationService {
   private async persist(reservation: Reservation) {
     const startDate = reservation.period.start.toISOString().split("T")[0];
     const endDate = reservation.period.end.toISOString().split("T")[0];
-    const lockKey = `reservation_${startDate}_to_${endDate}`;
+    const lockKeys = [];
+    for (let date = new Date(startDate);
+         date <= new Date(endDate);
+         date.setDate(date.getDate() + 1)) {
+      lockKeys.push(date.toISOString());
+    }
+
     const createdReservation = await TransactionManager.run(
-      lockKey,
+      lockKeys,
       async () => {
         await this.checkAvailability(reservation.period);
         return await this.reservationRepository.store(reservation);
