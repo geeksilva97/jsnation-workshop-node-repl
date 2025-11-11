@@ -8,18 +8,31 @@ interface ConsoleResult {
   stdout: string;
 }
 
+interface ConsoleOptions {
+  sandbox?: boolean;
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export function startConsole(commands: string[]): Promise<ConsoleResult> {
+export function startConsole(
+  commands: string[],
+  options: ConsoleOptions = {},
+): Promise<ConsoleResult> {
   return new Promise((resolve, reject) => {
     const consolePath = path.resolve(__dirname, "../../src/console.ts");
 
-    const child = spawn("npx", ["tsx", consolePath], {
+    const args = ["tsx", consolePath];
+    if (options.sandbox) {
+      args.push("--sandbox");
+    }
+
+    const child = spawn("npx", args, {
       stdio: ["pipe", "pipe", "pipe"],
     });
 
     let stdout = "";
     let stderr = "";
+    let lastOutputLength = 0;
 
     child.stdout.on("data", (chunk) => {
       stdout += chunk.toString("utf8");
@@ -37,14 +50,33 @@ export function startConsole(commands: string[]): Promise<ConsoleResult> {
         const command = commandsWithExit[commandIndex];
         child.stdin.write(`${command}\n`);
         commandIndex++;
-        // Small delay before writing the next command
-        setTimeout(writeNextCommand, 100);
+
+        // Wait for output to stabilize (indicating evaluation is done)
+        let stabilityCheckCount = 0;
+        const maxStabilityChecks = 100; // Max 5 seconds of checking
+        const checkOutputStability = () => {
+          stabilityCheckCount++;
+          const currentLength = stdout.length;
+          if (
+            currentLength > lastOutputLength &&
+            stabilityCheckCount < maxStabilityChecks
+          ) {
+            lastOutputLength = currentLength;
+            // Wait a bit more to see if more output comes
+            setTimeout(checkOutputStability, 50);
+          } else {
+            // Output has stabilized, move to next command
+            setTimeout(writeNextCommand, 100);
+          }
+        };
+
+        setTimeout(checkOutputStability, 100);
       } else {
         child.stdin.end();
       }
     };
 
-    setTimeout(writeNextCommand, 300);
+    setTimeout(writeNextCommand, 1000);
 
     child.on("exit", (code) => {
       // Exit code 130 (SIGINT) is expected when we send .exit
