@@ -49,13 +49,13 @@ Expected output: ✅ Test 1 and 2 should pass
 
 ---
 
-## Challenge 2: Sandbox Mode with Transaction Rollback
+## Challenge 2: Implement REPL Rollback Behavior
 
 **Branch:** `console-challenge-2`
 
 ### Objective
 
-Implement a `--sandbox` mode that wraps all model operations in a database transaction, rolling back changes when the session closes.
+Implement transaction rollback on REPL session close. This challenge focuses purely on Node.js REPL event handling - the transaction and sandbox flag detection are already set up!
 
 ### Context
 
@@ -64,39 +64,39 @@ The Park42 application needs a safe way for users to experiment with data withou
 - Testing queries without affecting production data
 - Temporary exploration
 
-### Tasks
+The key is ensuring that when a user ends their REPL session (by typing `.exit`), all changes are automatically rolled back.
 
-1. **Parse the `--sandbox` flag**
-   - Detect if the console is started with `--sandbox` argument
-   - Store this in a variable for later use
+### Task
 
-2. **Create a database transaction when sandbox is enabled**
-   - If `--sandbox` is present, create a transaction before starting the REPL
-   - Otherwise, use the regular database connection
+**Implement rollback on REPL exit**
+- When the user types `.exit`, the `r.on("exit", ...)` event fires
+- Check if sandbox mode is enabled AND a transaction exists
+- If yes: call `await trx.rollback()` to discard all changes
+- This is the core REPL behavior you need to implement
 
-3. **Bind models to the transaction**
-   - Pass the transaction to the `bindModels()` helper
-   - This ensures all model queries use the transaction
-   - Make the bound models available in the REPL context
+### What's Already Done
 
-4. **Rollback on session close**
-   - When the user types `.exit`, detect the REPL exit event
-   - Call `await trx.rollback()` to rollback the transaction
-   - Then disconnect from the database
+✓ Sandbox flag detection: `process.argv.includes("--sandbox")`  
+✓ Transaction creation: `await database.connection.transaction()`  
+✓ Challenge 1 solution: name variable and .mycommand  
+✓ All REPL context setup  
 
 ### Success Criteria
 
-- Console starts with `--sandbox` flag without errors
-- Data modifications work within the REPL session
-- When the session closes, all changes are rolled back
-- Subsequent console sessions don't see the temporary changes
+- Running `npx tsx src/console.ts --sandbox` works without errors
+- When `.exit` is typed, the REPL exits and transaction is rolled back
+- Test 3 passes: "Sandbox mode rolls back changes when session closes"
 
 ### Hints
 
-- `process.argv.includes("--sandbox")` to check for the flag
-- `database.connection.transaction()` to create a transaction
-- `bindModels(trx)` is already implemented in `src/interface/console/index.ts`
-- Listen to the `r.on("exit", ...)` event to handle cleanup
+- The sandbox flag is stored in: `isSandbox`
+- The transaction is stored in: `trx`
+- Use the REPL `exit` event: `r.on("exit", async () => { ... })`
+- Implement: `if (isSandbox && trx) { await trx.rollback(); }`
+
+### Optional: Advanced Feature
+
+After completing the main task, you might be interested in the `bindModels(trx)` function available at `src/interface/console/index.ts`. This function binds all models to a transaction so queries automatically use it - but that's beyond the scope of this challenge!
 
 ### Test Command
 
