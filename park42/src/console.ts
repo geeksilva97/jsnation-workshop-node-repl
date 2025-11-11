@@ -1,4 +1,4 @@
-import repl from "node:repl";
+import * as repl from "node:repl";
 import { config } from "./config.js";
 
 import { makeDatabase } from "./infrastructure/database/database.js";
@@ -7,13 +7,13 @@ import type { Transaction } from "objection";
 
 const database = makeDatabase();
 
-function modelsToWithinTxn(txn: Transaction) {
+function modelsToWithinTxn(txn: Transaction): typeof models {
   const wrappedModels: Record<string, unknown> = {};
 
   for (const [key, Model] of Object.entries(models)) {
     wrappedModels[key] = Model.bindKnex(txn);
   }
-  return wrappedModels;
+  return wrappedModels as typeof models;
 }
 
 const isSandbox = process.argv.includes("--sandbox");
@@ -23,7 +23,6 @@ const startREPL = async () => {
   const trx = isSandbox ? await database.connection.transaction() : null;
   let m = models;
   if (trx) {
-    // @ts-ignore
     m = modelsToWithinTxn(trx);
   }
 
@@ -42,7 +41,9 @@ const startREPL = async () => {
   });
 
   r.on("exit", async () => {
-    await (isSandbox ? trx.rollback() : Promise.resolve());
+    if (isSandbox && trx) {
+      await trx.rollback();
+    }
     await database.disconnect();
     process.kill(process.pid, "SIGINT");
   });
