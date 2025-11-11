@@ -42,7 +42,7 @@ const dbLogger = pino({ ...loggerConfig, level: "debug" });
 const db = {
   development: {
     client: "postgresql",
-    debug: true,
+    debug: false,
     log: {
       warn: (message) => dbLogger.warn(message, "Knex"),
       error: (message) => dbLogger.error(message, "Knex"),

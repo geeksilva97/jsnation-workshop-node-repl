@@ -17,7 +17,6 @@ test("Sandbox mode rolls back changes when session closes", async (t) => {
   const createUserCommand = `await User.query().insert({ email: testEmail, password: "test123" })`;
   const countUsersCommand = `await User.query().where({ email: testEmail }).count()`;
 
-  // Run the console with sandbox mode and create a user, then count users
   const { stdout } = await startConsole(
     [assignEmailCommand, createUserCommand, countUsersCommand],
     { sandbox: true },
@@ -30,13 +29,11 @@ test("Sandbox mode rolls back changes when session closes", async (t) => {
     "User should exist during sandbox session (count should be 1)",
   );
 
-  // Query the database to verify the user was NOT persisted after sandbox closes
-  // Create a new session without sandbox to verify rollback worked
   const { stdout: checkStdout } = await startConsole([
     `const checkEmail = "${uniqueEmail}"; await User.query().where({ email: checkEmail }).count()`,
   ]);
 
-  // The count should be 0 in a new session (proving rollback worked)
+  // The count should be 0 in a new session
   t.assert.match(
     checkStdout,
     /count.*0|0.*count/,
