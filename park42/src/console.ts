@@ -9,12 +9,17 @@ const isSandbox = process.argv.includes("--sandbox");
 
 const startREPL = async () => {
   const r = repl.start("jsnation> ");
+
+  // Transaction is created for sandbox mode
   const trx = isSandbox ? await database.connection.transaction() : null;
+
+  // Bind models to the transaction when in sandbox mode
   let m = models;
   if (trx) {
     m = bindModels(trx);
   }
 
+  // Add the context variables to the REPL
   Object.assign(r.context, {
     name: "JSNation",
     config,
@@ -30,9 +35,11 @@ const startREPL = async () => {
   });
 
   r.on("exit", async () => {
+    // Rollback the transaction on REPL exit when in sandbox mode
     if (isSandbox && trx) {
       await trx.rollback();
     }
+
     await database.disconnect();
     process.kill(process.pid, "SIGINT");
   });
