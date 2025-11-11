@@ -1,7 +1,7 @@
 import repl from "node:repl";
 import { config } from "./config.js";
 
-// import { User } from "./infrastructure/database/models/user.js";
+import models from "./infrastructure/database/models/index.js";
 
 const startREPL = () => {
   const r = repl.start("jsnation> ");
@@ -9,6 +9,7 @@ const startREPL = () => {
   Object.assign(r.context, {
     name: "JSNation",
     config,
+    ...models
   });
 
   r.defineCommand("mycommand", {
