@@ -19,12 +19,12 @@ const redis = {
   url: Env.getString("REDIS_URL", `redis://${redisHost}:${redisPort}`),
 };
 
-const queues = {
-  default: makeQueue("park42", {
-    host: redisHost,
-    port: redisPort,
-  }),
-};
+// const queues = {
+//   default: makeQueue("park42", {
+//     host: redisHost,
+//     port: redisPort,
+//   }),
+// };
 
 const loggerConfig = {
   level: "debug",
@@ -114,7 +114,7 @@ export const config = {
   createReservationUseCase,
   updatePaymentStatusUseCase,
   secrets,
-  queues,
+  // queues,
   reservationRepository,
   maxMinutsBeforeExpiring
 };

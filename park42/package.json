@@ -8,6 +8,7 @@
     "start": "node dist/server.js",
     "knex": "tsx ./node_modules/.bin/knex",
     "check": "biome check --write",
+    "console": "tsx src/console.ts",
     "dev": "tsx --watch src/index.ts",
     "dev:db:migration:create": "npm run knex migrate:make",
     "dev:db:create": "createdbjs park42_development --user=postgres --password=postgres --host=127.0.0.1",

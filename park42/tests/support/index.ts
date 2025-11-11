@@ -29,7 +29,6 @@ export function startConsole(commands: string[]): Promise<ConsoleResult> {
       stderr += chunk.toString("utf8");
     });
 
-    // Write commands to stdin with small delays between them
     const commandsWithExit = [...commands, ".exit"];
     let commandIndex = 0;
 
@@ -38,14 +37,13 @@ export function startConsole(commands: string[]): Promise<ConsoleResult> {
         const command = commandsWithExit[commandIndex];
         child.stdin.write(`${command}\n`);
         commandIndex++;
-        // Add a small delay before writing the next command
+        // Small delay before writing the next command
         setTimeout(writeNextCommand, 100);
       } else {
         child.stdin.end();
       }
     };
 
-    // Start writing commands after REPL is ready
     setTimeout(writeNextCommand, 300);
 
     child.on("exit", (code) => {
