@@ -15,7 +15,6 @@ const startREPL = async () => {
 
   // NOTE: If you wanted to bind models to the transaction (advanced feature),
   // you can use the bindModels(trx) function imported from "./interface/console/index.js"
-  // For now, we'll just use the regular models.
   let m = models;
 
   // Add the context variables to the REPL
@@ -39,11 +38,6 @@ const startREPL = async () => {
     // - Check: if (isSandbox && trx)
     // - Then: call await trx.rollback()
     // This discards all changes made during the REPL session
-    //
-    // Write your implementation here (uncomment the template below):
-    // if (isSandbox && trx) {
-    //   await trx.rollback();
-    // }
 
     await database.disconnect();
     process.kill(process.pid, "SIGINT");
