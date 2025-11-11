@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Test } from "../../src/_lib/testSupport/setupTest.js";
 import { User } from "../../src/infrastructure/database/models/user.js";
 
@@ -7,9 +8,11 @@ interface ConsoleResult {
   stdout: string;
 }
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 export function startConsole(commands: string[]): Promise<ConsoleResult> {
   return new Promise((resolve, reject) => {
-    const consolePath = path.join(process.cwd(), "src", "console.ts");
+    const consolePath = path.resolve(__dirname, "../../src/console.ts");
 
     const child = spawn("npx", ["tsx", consolePath], {
       stdio: ["pipe", "pipe", "pipe"],
