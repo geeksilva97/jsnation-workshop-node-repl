@@ -7,13 +7,13 @@ import type { Transaction } from "objection";
 
 const database = makeDatabase();
 
-function modelsToWithinTxn(txn: Transaction): typeof models {
-  const wrappedModels: Record<string, unknown> = {};
+function bindModels(txn: Transaction) {
+  const boundModels: Record<string, unknown> = {};
 
   for (const [key, Model] of Object.entries(models)) {
-    wrappedModels[key] = Model.bindKnex(txn);
+    boundModels[key] = Model.bindKnex(txn);
   }
-  return wrappedModels as typeof models;
+  return boundModels as typeof models;
 }
 
 const isSandbox = process.argv.includes("--sandbox");
@@ -23,7 +23,7 @@ const startREPL = async () => {
   const trx = isSandbox ? await database.connection.transaction() : null;
   let m = models;
   if (trx) {
-    m = modelsToWithinTxn(trx);
+    m = bindModels(trx);
   }
 
   Object.assign(r.context, {
