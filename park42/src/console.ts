@@ -13,10 +13,8 @@ const startREPL = async () => {
   // - name: "JSNation"
   // - config
   // - all models
-  // Example: Object.assign(r.context, { name: "JSNation", config, ...models });
 
   // TODO: Define the .mycommand custom command
-  // Use r.defineCommand() to define a command that:
   // - Prints "Hello Node REPL" using console.log()
   // - Calls this.displayPrompt() to show the prompt again
 
