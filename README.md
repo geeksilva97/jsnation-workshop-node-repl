@@ -20,9 +20,10 @@ This monorepo contains the **Park42** API and a supporting mock payment service 
 
 - `bin/install` – Install dependencies
 - `docker-compose up --build` – Start PostgreSQL, Redis and the mock payment API
-- `bin/npm run dev:db:create` – Create the database
-- `bin/npm run dev:db:migrate` – Migrate the database
-- `bin/npm run dev:db:seed` – Seed the database
+- `bin/npm run dev:db:setup` – Setup the development database, which runs the following commands:
+    - `bin/npm run dev:db:create` – Create the database
+    - `bin/npm run dev:db:migrate` – Migrate the database
+    - `bin/npm run dev:db:seed` – Seed the database
 
 ## Running
 

@@ -15,6 +15,7 @@
     "dev:db:migrate": "npm run knex migrate:latest",
     "dev:db:rollback": "npm run knex migrate:rollback",
     "dev:db:seed": "npm run knex seed:run",
+    "dev:db:setup": "npm run dev:db:create && npm run dev:db:migrate && npm run dev:db:seed",
     "dev:worker": "tsx --watch src/worker.ts",
     "test": "PAYMENT_API_SECRET=cinderela-baiana MAX_SPOTS=1 tsx ./node_modules/.bin/vitest",
     "test:db:create": "createdbjs park42_test --user=postgres --password=postgres --host=127.0.0.1",
