@@ -25,7 +25,7 @@ This monorepo contains the **Park42** API and a supporting mock payment service 
     - `bin/npm run dev:db:migrate` – Migrate the database
     - `bin/npm run dev:db:seed` – Seed the database
 
-## Running
+## Running (Not applicable for the workshop)
 
 Use the wrapper scripts at the repository root to work with the application.
 During development the database and auxiliary services run inside Docker, while the application runs on the host.
@@ -34,7 +34,7 @@ During development the database and auxiliary services run inside Docker, while 
 - `bin/npm run dev:worker` – Start the BullMQ worker
 - `bin/dev` – Start the application with automatic reloading
 
-## Running Tests
+## Running Tests (Not applicable for the workshop)
 
 - `bin/npm run test:db:create` – Create the test database
 - `bin/npm run test:db:migrate` – Migrate the test database
