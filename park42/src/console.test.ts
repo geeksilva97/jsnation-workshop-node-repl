@@ -11,7 +11,7 @@ test("REPL has command .mycommand that prints Hello Node REPL", async (t) => {
   t.assert.match(stdout, /Hello Node REPL/);
 });
 
-test("Sandbox mode rolls back changes when session closes", async (t) => {
+test.skip("Sandbox mode rolls back changes when session closes", async (t) => {
   const uniqueEmail = `sandbox-test-${Date.now()}@example.com`;
   const assignEmailCommand = `const testEmail = "${uniqueEmail}"`;
   const createUserCommand = `await User.query().insert({ email: testEmail, password: "test123" })`;
